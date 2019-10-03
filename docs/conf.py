@@ -130,7 +130,7 @@ latex_elements = {
 latex_documents = [
     (master_doc, 'mslex.tex',
      u'mslex Documentation',
-     u'Lawrence D'Anna', 'manual'),
+     u'Lawrence D\'Anna', 'manual'),
 ]
 
 

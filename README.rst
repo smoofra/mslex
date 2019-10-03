@@ -14,22 +14,34 @@ mslex
         :alt: Documentation Status
 
 
-
-
 shlex for windows
-
 
 * Free software: Apache Software License 2.0
 * Documentation: https://mslex.readthedocs.io.
 
-
 Features
 --------
 
-* TODO
+This is the missing shlex package for windows shell quoting.   It provides two
+functions -- split and quote -- just like shlex.
+
 
 Credits
 -------
+
+These are excellent articles to read if you really want to face the
+sanity-melting reality buried under the surface of how windows passes command
+line arguments to your programs.   I recommend you read something else.
+
+* `How a Windows Program Splits Its Command Line Into Individual Arguments`_
+
+* `Everyone quotes command line arguments the wrong way`_
+
+.. _`How a Windows Program Splits Its Command Line Into Individual Arguments`:
+  http://www.windowsinspired.com/how-a-windows-programs-splits-its-command-line-into-individual-arguments/
+
+.. _`Everyone quotes command line arguments the wrong way`:
+  https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
