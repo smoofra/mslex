@@ -6,7 +6,7 @@ import itertools
 
 __all__ = ('split', 'quote')
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 def iter_arg(peek, i):
     quote_mode = False
