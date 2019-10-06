@@ -33,8 +33,11 @@ def iter_args(s):
     for m in i:
         yield ''.join(iter_arg(m, i))
 
+cmd_meta = r'([\"\^\&\|\<\>\(\)\%\!])'
+cmd_meta_or_space = r'[\s\"\^\&\|\<\>\(\)\%\!]'
 
-def split(s, like_cmd=True):
+
+def split(s, like_cmd=True, check=True):
     """
     Split a string of command line arguments like DOS and Windows do.
 
@@ -50,10 +53,13 @@ def split(s, like_cmd=True):
     invocations like `&whoami`, and without string substitutions like
     `%PATH%`, then this function will split it accurately.
 
-    if like_cmd is false, then this will split the string like
+    If check is true, split will raise a ValueError if cmd metacharacters
+    occur in the string without being quoted.
+
+    f like_cmd is false, then this will split the string like
     CommandLineToArgvW does.
     """
-    if like_cmd and re.search(r'[\%\!\^]', s):
+    if like_cmd and re.search(cmd_meta, s):
         def i():
             quote_mode = False
             for m in re.finditer(r'(\^.)|(\")|([^\^\"]+)', s):
@@ -68,20 +74,11 @@ def split(s, like_cmd=True):
                     quote_mode = not quote_mode
                 else:
                     yield text
+                    if check and not quote_mode and re.search(cmd_meta, text):
+                        raise ValueError(f"unquoted cmd metacharacters in string: {repr(s)}")
         s = ''.join(i())
-        # def i(parts):
-        #     quote_mode = False
-        #     for part in parts:
-        #         if quote_mode:
-        #             yield re.sub(r'\^(.)', r'\1', part)
-        #         else:
-        #             yield part
-        #         quote_mode = not quote_mode
-        #s = '"'.join(i(s.split('"')))
     return list(iter_args(s))
 
-cmd_meta = r'([\"\^\&\|\<\>\(\)\%\!])'
-cmd_meta_or_space = r'[\s\"\^\&\|\<\>\(\)\%\!]'
 
 
 def quote(s, for_cmd=True):

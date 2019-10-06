@@ -5,6 +5,7 @@
 
 import sys
 import itertools
+import functools
 import unittest
 import subprocess
 
@@ -205,13 +206,13 @@ class TestMslex(unittest.TestCase):
     def case(self, s, ans, cmd):
         try:
             if ans is not None:
-                self.assertEqual(split(s), ans)
+                self.assertEqual(split(s, like_cmd=cmd), ans)
             if sys.platform == 'win32' and not cmd:
                 self.assertEqual(split(s), ctypes_split(s))
         except AssertionError:
             print(f"in: «{s}»")
             print()
-            for x in split(s):
+            for x in split(s, like_cmd=cmd):
                 print(f"out: «{x}»")
             print()
             if ans is not None:
@@ -260,18 +261,24 @@ class TestMslex(unittest.TestCase):
             self.case(s, ans, cmd=False)
 
     def test_examples_for_cmd(self):
-        for s, ans in examples:
+        for s, ans in cmd_examples:
             self.case(s, ans, cmd=True)
 
     def test_quote_examples(self):
-        for s, ans in examples:
+        qu = functools.partial(quote, for_cmd=False)
+        sp = functools.partial(split, like_cmd=False)
+        for s, ans in itertools.chain(examples, cmd_examples):
+            self.assertEqual(ans, sp(' '.join(map(qu, ans))))
+
+    def test_quote_examples_cmd(self):
+        for s, ans in itertools.chain(examples, cmd_examples):
             self.assertEqual(ans, split(' '.join(map(quote, ans))))
 
-    def test_requote_examples(self):
+    def test_requote_examples_cmd(self):
         for s, ans in examples:
             self.assertEqual([s], split(quote(s)))
 
-    def test_requote_examples_nocmd(self):
+    def test_requote_examples(self):
         for s, ans in examples:
             self.assertEqual([s], split(quote(s, for_cmd=False), like_cmd=False))
 
@@ -284,16 +291,16 @@ class TestMslex(unittest.TestCase):
                 yield ''.join(x)
 
         for s in every_string():
-            q = quote(s)
-            self.assertEqual([s], split(q))
-            self.assertEqual([s, s], split(f'{q} {q}'))
+            q = quote(s, for_cmd=False)
+            self.assertEqual([s], split(q, like_cmd=False))
+            self.assertEqual([s, s], split(f'{q} {q}', like_cmd=False))
 
 
     def test_quote_every_string_for_cmd(self):
 
         def every_string():
             chars = [' ', 'x', '"', '\\', '^', '&']
-            prod = itertools.product(*itertools.repeat(chars, 6))
+            prod = itertools.product(*itertools.repeat(chars, 7))
             for x in prod:
                 yield ''.join(x)
 
