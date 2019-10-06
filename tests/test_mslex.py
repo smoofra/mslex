@@ -192,6 +192,7 @@ examples = [
 cmd_examples = [
     (r'"foo &whoami bar"', ['foo &whoami bar']),
     (r'^^', ['^']),
+    (r'"^"', ['^']),
     (r'"^^"', ['^^']),
     (r'foo^bar', ['foobar']),
     (r'foo^^bar', ['foo^bar']),
@@ -199,6 +200,22 @@ cmd_examples = [
     (r'"foo^^bar"', ['foo^^bar']),
     ]
 
+
+pretty_examples = [
+    (r'c:\Program Files\FooBar', r'"c:\Program Files\FooBar"'),
+    (r'c:\Program Files (x86)\FooBar', r'"c:\Program Files (x86)\FooBar"'),
+    (r'^', '"^"'),
+    (r' ^', '" ^"'),
+    (r'&', '"&"'),
+    (r'!', '^!'),
+    (r'!foo!', '^!foo^!'),
+    ("foo\\bar\\baz\\", 'foo\\bar\\baz\\'),
+    ("foo bar\\baz\\", '"foo bar\\baz\\\\"'),
+    ("foo () bar\\baz\\", '"foo () bar\\baz\\\\"'),
+    ("foo () bar\\baz\\\\", '"foo () bar\\baz\\\\\\\\"'),
+    ("foo () bar\\baz\\\\\\", '"foo () bar\\baz\\\\\\\\\\\\"'),
+    ("foo () bar\\baz\\\\\\\\", '"foo () bar\\baz\\\\\\\\\\\\\\\\"'),
+]
 
 class TestMslex(unittest.TestCase):
     """Tests for `mslex` package."""
@@ -299,8 +316,8 @@ class TestMslex(unittest.TestCase):
     def test_quote_every_string_for_cmd(self):
 
         def every_string():
-            chars = [' ', 'x', '"', '\\', '^', '&']
-            prod = itertools.product(*itertools.repeat(chars, 7))
+            chars = [' ', 'x', '"', '\\', '^', '&', '!']
+            prod = itertools.product(*itertools.repeat(chars, 6))
             for x in prod:
                 yield ''.join(x)
 
@@ -322,3 +339,9 @@ class TestMslex(unittest.TestCase):
             if sys.platform == "win32":
                 proc = subprocess.run('python -c "import sys; print(sys.argv[1])" ' + q, shell=True, stdout=subprocess.PIPE)
                 self.assertEqual(proc.stdout.decode('ascii').rstrip(), s.rstrip())
+
+    def test_pretty_examples(self):
+        for s, ans in pretty_examples:
+            self.assertEqual(quote(s), ans)
+            self.assertEqual(split(ans), [s])
+            self.assertEqual(split(ans + ' ' + ans + " foo bar"), [s, s, 'foo', 'bar'])

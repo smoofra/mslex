@@ -36,6 +36,7 @@ def iter_args(s):
 cmd_meta = r'([\"\^\&\|\<\>\(\)\%\!])'
 cmd_meta_or_space = r'[\s\"\^\&\|\<\>\(\)\%\!]'
 
+cmd_meta_inside_quotes = r'([\"\%\!])'
 
 def split(s, like_cmd=True, check=True):
     """
@@ -67,6 +68,8 @@ def split(s, like_cmd=True, check=True):
                 if escaped:
                     if quote_mode:
                         yield escaped
+                        if escaped[1] == '"':
+                            quote_mode = False
                     else:
                         yield escaped[1]
                 elif quote:
@@ -74,8 +77,10 @@ def split(s, like_cmd=True, check=True):
                     quote_mode = not quote_mode
                 else:
                     yield text
-                    if check and not quote_mode and re.search(cmd_meta, text):
-                        raise ValueError(f"unquoted cmd metacharacters in string: {repr(s)}")
+                    if check:
+                        meta = cmd_meta_inside_quotes if quote_mode else cmd_meta
+                        if re.search(meta, text):
+                            raise ValueError(f"unquoted cmd metacharacters in string: {repr(s)}")
         s = ''.join(i())
     return list(iter_args(s))
 
@@ -103,6 +108,14 @@ def quote(s, for_cmd=True):
     if not re.search(cmd_meta_or_space, s):
         return s
     if for_cmd and re.search(cmd_meta, s):
+        if not re.search(cmd_meta_inside_quotes, s):
+            m = re.search(r'\\+$', s)
+            if m:
+                return '"' + s + m.group() + '"'
+            else:
+                return '"' + s + '"'
+        if not re.search(r'[\s\"]', s):
+            return re.sub(cmd_meta, r'^\1', s)
         return re.sub(cmd_meta, r'^\1', quote(s, for_cmd=False))
     i = re.finditer(r'(\\*)(\"+)|(\\+)|([^\\\"]+)', s)
     def parts():
