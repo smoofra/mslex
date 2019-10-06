@@ -80,6 +80,9 @@ def split(s, like_cmd=True):
         #s = '"'.join(i(s.split('"')))
     return list(iter_args(s))
 
+cmd_meta = r'([\"\^\&\|\<\>\(\)\%\!])'
+cmd_meta_or_space = r'[\s\"\^\&\|\<\>\(\)\%\!]'
+
 
 def quote(s, for_cmd=True):
     """
@@ -100,10 +103,10 @@ def quote(s, for_cmd=True):
     """
     if not s:
         return '""'
-    if not re.search(r'[\s\"\^\&\|\<\>\(\)\%\!]', s):
+    if not re.search(cmd_meta_or_space, s):
         return s
-    if for_cmd and re.search(r'[\%\!\^]', s):
-        return re.sub(r'([\"\%\!\^])', r'^\1', quote(s, for_cmd=False))
+    if for_cmd and re.search(cmd_meta, s):
+        return re.sub(cmd_meta, r'^\1', quote(s, for_cmd=False))
     i = re.finditer(r'(\\*)(\"+)|(\\+)|([^\\\"]+)', s)
     def parts():
         yield '"'

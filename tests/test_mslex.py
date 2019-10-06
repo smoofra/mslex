@@ -6,6 +6,7 @@
 import sys
 import itertools
 import unittest
+import subprocess
 
 from mslex import split, quote
 
@@ -184,8 +185,10 @@ examples = [
     ('\\\\\\\\""""""""" x', ['\\\\"""', 'x']),
     ('\\\\\\\\"""""""""" x', ['\\\\""" x']),
     ('\\\\\\\\""""""""""" x', ['\\\\"""', 'x']),
-    ('\\\\\\\\"""""""""""" x', ['\\\\""""', 'x']),
+    ('\\\\\\\\"""""""""""" x', ['\\\\""""', 'x'])]
 
+
+cmd_examples = [
     (r'"foo &whoami bar"', ['foo &whoami bar']),
     (r'^^', ['^']),
     (r'"^^"', ['^^']),
@@ -199,11 +202,11 @@ examples = [
 class TestMslex(unittest.TestCase):
     """Tests for `mslex` package."""
 
-    def case(self, s, ans):
+    def case(self, s, ans, cmd):
         try:
             if ans is not None:
                 self.assertEqual(split(s), ans)
-            if sys.platform == 'win32':
+            if sys.platform == 'win32' and not cmd:
                 self.assertEqual(split(s), ctypes_split(s))
         except AssertionError:
             print(f"in: «{s}»")
@@ -238,7 +241,7 @@ class TestMslex(unittest.TestCase):
                 yield ''.join(x)
 
         for s in every_string():
-            self.case(s, None)
+            self.case(s, None, cmd=False)
 
     @unittest.skipUnless(sys.platform == "win32", "requires Windows")
     def test_multi_quotes(self):
@@ -250,11 +253,15 @@ class TestMslex(unittest.TestCase):
                     else:
                         s = ''
                     s += '\\'*m + '"'*n + ' x'
-                    self.case(s, None)
+                    self.case(s, None, False)
 
     def test_examples(self):
         for s, ans in examples:
-            self.case(s, ans)
+            self.case(s, ans, cmd=False)
+
+    def test_examples_for_cmd(self):
+        for s, ans in examples:
+            self.case(s, ans, cmd=True)
 
     def test_quote_examples(self):
         for s, ans in examples:
@@ -286,7 +293,7 @@ class TestMslex(unittest.TestCase):
 
         def every_string():
             chars = [' ', 'x', '"', '\\', '^', '&']
-            prod = itertools.product(*itertools.repeat(chars, 5))
+            prod = itertools.product(*itertools.repeat(chars, 6))
             for x in prod:
                 yield ''.join(x)
 
@@ -294,3 +301,17 @@ class TestMslex(unittest.TestCase):
             q = quote(s)
             self.assertEqual([s], split(q))
             self.assertEqual([s, s], split(f'{q} {q}'))
+
+
+    @unittest.skipUnless(sys.platform == "win32", "requires Windows")
+    def test_quote_every_string_using_cmd(self):
+        def every_string():
+            chars = [' ', 'x', '"', '\\', '^', '&']
+            prod = itertools.product(*itertools.repeat(chars, 4))
+            for x in prod:
+                yield ''.join(x)
+        for s in every_string():
+            q = quote(s)
+            if sys.platform == "win32":
+                proc = subprocess.run('python -c "import sys; print(sys.argv[1])" ' + q, shell=True, stdout=subprocess.PIPE)
+                self.assertEqual(proc.stdout.decode('ascii').rstrip(), s.rstrip())
