@@ -185,6 +185,14 @@ examples = [
     ('\\\\\\\\"""""""""" x', ['\\\\""" x']),
     ('\\\\\\\\""""""""""" x', ['\\\\"""', 'x']),
     ('\\\\\\\\"""""""""""" x', ['\\\\""""', 'x']),
+
+    (r'"foo &whoami bar"', ['foo &whoami bar']),
+    (r'^^', ['^']),
+    (r'"^^"', ['^^']),
+    (r'foo^bar', ['foobar']),
+    (r'foo^^bar', ['foo^bar']),
+    (r'"foo^bar"', ['foo^bar']),
+    (r'"foo^^bar"', ['foo^^bar']),
     ]
 
 
@@ -256,11 +264,29 @@ class TestMslex(unittest.TestCase):
         for s, ans in examples:
             self.assertEqual([s], split(quote(s)))
 
+    def test_requote_examples_nocmd(self):
+        for s, ans in examples:
+            self.assertEqual([s], split(quote(s, for_cmd=False), like_cmd=False))
+
     def test_quote_every_string(self):
 
         def every_string():
             chars = [' ', 'x', '"', '\\']
             prod = itertools.product(*itertools.repeat(chars, 8))
+            for x in prod:
+                yield ''.join(x)
+
+        for s in every_string():
+            q = quote(s)
+            self.assertEqual([s], split(q))
+            self.assertEqual([s, s], split(f'{q} {q}'))
+
+
+    def test_quote_every_string_for_cmd(self):
+
+        def every_string():
+            chars = [' ', 'x', '"', '\\', '^', '&']
+            prod = itertools.product(*itertools.repeat(chars, 5))
             for x in prod:
                 yield ''.join(x)
 

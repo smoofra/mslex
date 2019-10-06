@@ -33,18 +33,77 @@ def iter_args(s):
     for m in i:
         yield ''.join(iter_arg(m, i))
 
-def split(s):
+
+def split(s, like_cmd=True):
+    """
+    Split a string of command line arguments like DOS and Windows do.
+
+    On windows, before a command line argument becomes a char* in a
+    program's argv, it must be parsed by both cmd.exe, and by
+    CommandLineToArgvW.
+
+    If like_cmd is true, then this will emulate both cmd.exe and
+    CommandLineToArgvW.   Since cmd.exe is a shell, and can run
+    external programs, this function obviously cannot emulate
+    everything it does.   However if the string passed in would
+    be parsed by cmd as a quoted literal, without command
+    invocations like `&whoami`, and without string substitutions like
+    `%PATH%`, then this function will split it accurately.
+
+    if like_cmd is false, then this will split the string like
+    CommandLineToArgvW does.
+    """
+    if like_cmd and re.search(r'[\%\!\^]', s):
+        def i():
+            quote_mode = False
+            for m in re.finditer(r'(\^.)|(\")|([^\^\"]+)', s):
+                escaped, quote, text = m.groups()
+                if escaped:
+                    if quote_mode:
+                        yield escaped
+                    else:
+                        yield escaped[1]
+                elif quote:
+                    yield '"'
+                    quote_mode = not quote_mode
+                else:
+                    yield text
+        s = ''.join(i())
+        # def i(parts):
+        #     quote_mode = False
+        #     for part in parts:
+        #         if quote_mode:
+        #             yield re.sub(r'\^(.)', r'\1', part)
+        #         else:
+        #             yield part
+        #         quote_mode = not quote_mode
+        #s = '"'.join(i(s.split('"')))
     return list(iter_args(s))
 
-cmd_meta = r'[\s\"\^\&\|\<\>\(\)\%\!]'
 
-cmd_meta_inside_quotes = r'[\%\!]'
+def quote(s, for_cmd=True):
+    """
+    Quote a string for use as a command line argument in DOS or Windows.
 
-def quote(s):
+    On windows, before a command line argument becomes a char* in a
+    program's argv, it must be parsed by both cmd.exe, and by
+    CommandLineToArgvW.
+
+    If for_cmd is true, then this will quote the string so it will
+    be parsed correctly by cmd.exe and then by CommandLineToArgvW.
+
+    If for_cmd is false, then this will quote the string so it will
+    be parsed correctly when passed directly to CommandLineToArgvW.
+
+    For some strings there is no way to quote them so they will
+    parse correctly in both situations.
+    """
     if not s:
         return '""'
-    if not re.search(cmd_meta, s):
+    if not re.search(r'[\s\"\^\&\|\<\>\(\)\%\!]', s):
         return s
+    if for_cmd and re.search(r'[\%\!\^]', s):
+        return re.sub(r'([\"\%\!\^])', r'^\1', quote(s, for_cmd=False))
     i = re.finditer(r'(\\*)(\"+)|(\\+)|([^\\\"]+)', s)
     def parts():
         yield '"'
