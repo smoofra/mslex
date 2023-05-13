@@ -80,7 +80,7 @@ def split(s, like_cmd=True, check=True):
                     if check:
                         meta = cmd_meta_inside_quotes if quote_mode else cmd_meta
                         if re.search(meta, text):
-                            raise ValueError(f"unquoted cmd metacharacters in string: {repr(s)}")
+                            raise ValueError("unquoted cmd metacharacters in string: " + repr(s))
         s = ''.join(i())
     return list(iter_args(s))
 
