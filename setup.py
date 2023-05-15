@@ -22,7 +22,7 @@ setup(
     author_email='larry@elder-gods.org',
     python_requires='>=3.5',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
@@ -48,6 +48,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/smoofra/mslex',
-    version='0.3.0',
+    version='1.0.0',
     zip_safe=False,
 )
