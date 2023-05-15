@@ -227,18 +227,18 @@ class TestMslex(unittest.TestCase):
             if sys.platform == 'win32' and not cmd:
                 self.assertEqual(split(s), ctypes_split(s))
         except AssertionError:
-            print(f"in: «{s}»")
+            print("in: «{}»".format(s))
             print()
             for x in split(s, like_cmd=cmd):
-                print(f"out: «{x}»")
+                print("out: «{}»".format(x))
             print()
             if ans is not None:
                 for x in ans:
-                    print(f"ans: «{x}»")
+                    print("ans: «{}»".format(x))
                 print()
             if sys.platform == 'win32':
                 for x in ctypes_split(s):
-                    print(f"win: «{x}»")
+                    print("win: «{}»".format(x))
                 print()
             raise
 
@@ -310,7 +310,7 @@ class TestMslex(unittest.TestCase):
         for s in every_string():
             q = quote(s, for_cmd=False)
             self.assertEqual([s], split(q, like_cmd=False))
-            self.assertEqual([s, s], split(f'{q} {q}', like_cmd=False))
+            self.assertEqual([s, s], split('{} {}'.format(q,q), like_cmd=False))
 
 
     def test_quote_every_string_for_cmd(self):
@@ -324,7 +324,7 @@ class TestMslex(unittest.TestCase):
         for s in every_string():
             q = quote(s)
             self.assertEqual([s], split(q))
-            self.assertEqual([s, s], split(f'{q} {q}'))
+            self.assertEqual([s, s], split('{} {}'.format(q,q)))
 
 
     @unittest.skipUnless(sys.platform == "win32", "requires Windows")
