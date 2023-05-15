@@ -35,10 +35,15 @@ line arguments to your programs.   I recommend you read something else.
 
 * `How a Windows Program Splits Its Command Line Into Individual Arguments`_
 
+  * The original URL is now dead, but fortunately the article is `backed up on the Internet Archive`_
+
 * `Everyone quotes command line arguments the wrong way`_
 
 .. _`How a Windows Program Splits Its Command Line Into Individual Arguments`:
   http://www.windowsinspired.com/how-a-windows-programs-splits-its-command-line-into-individual-arguments/
+
+.. _`backed up on the Internet Archive`:
+  https://web.archive.org/web/20220629212422/http://www.windowsinspired.com/how-a-windows-programs-splits-its-command-line-into-individual-arguments/
 
 .. _`Everyone quotes command line arguments the wrong way`:
   https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
