@@ -4,13 +4,13 @@ import sys
 import re
 import itertools
 
-from typing import Iterator, List, TextIO
+from typing import Iterator, List, Match, TextIO
 
 __all__ = ('split', 'quote')
 
 __version__ = '0.3.0'
 
-def iter_arg(peek: re.Match, i: Iterator[re.Match]) -> Iterator[str]:
+def iter_arg(peek: Match, i: Iterator[Match]) -> Iterator[str]:
     quote_mode = False
     for m in itertools.chain([peek], i):
         space, slashes, quotes, text = m.groups()
