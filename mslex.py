@@ -149,9 +149,9 @@ def split_cli() -> None:
                         help='file to split')
     args = parser.parse_args()
 
-    input: TextIO
+
     if args.filename:
-        input = open(args.filename, 'r')
+        input = open(args.filename, 'r') # type: TextIO
     else:
         input = sys.stdin
 
