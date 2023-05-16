@@ -4,11 +4,13 @@ import sys
 import re
 import itertools
 
+from typing import Iterator, List, Match, TextIO
+
 __all__ = ('split', 'quote')
 
 __version__ = '0.3.0'
 
-def iter_arg(peek, i):
+def iter_arg(peek: Match[str], i: Iterator[Match[str]]) -> Iterator[str]:
     quote_mode = False
     for m in itertools.chain([peek], i):
         space, slashes, quotes, text = m.groups()
@@ -28,7 +30,7 @@ def iter_arg(peek, i):
         else:
             yield text
 
-def iter_args(s):
+def iter_args(s: str) -> Iterator[str]:
     i = re.finditer(r'(\s+)|(\\*)(\"+)|(.[^\s\\\"]*)', s.lstrip())
     for m in i:
         yield ''.join(iter_arg(m, i))
@@ -38,7 +40,7 @@ cmd_meta_or_space = r'[\s\"\^\&\|\<\>\(\)\%\!]'
 
 cmd_meta_inside_quotes = r'([\"\%\!])'
 
-def split(s, like_cmd=True, check=True):
+def split(s: str, like_cmd: bool = True, check: bool = True) -> List[str]:
     """
     Split a string of command line arguments like DOS and Windows do.
 
@@ -61,7 +63,7 @@ def split(s, like_cmd=True, check=True):
     CommandLineToArgvW does.
     """
     if like_cmd and re.search(cmd_meta, s):
-        def i():
+        def i() -> Iterator[str]:
             quote_mode = False
             for m in re.finditer(r'(\^.)|(\")|([^\^\"]+)', s):
                 escaped, quote, text = m.groups()
@@ -86,7 +88,7 @@ def split(s, like_cmd=True, check=True):
 
 
 
-def quote(s, for_cmd=True):
+def quote(s: str, for_cmd: bool = True) -> str:
     """
     Quote a string for use as a command line argument in DOS or Windows.
 
@@ -118,7 +120,7 @@ def quote(s, for_cmd=True):
             return re.sub(cmd_meta, r'^\1', s)
         return re.sub(cmd_meta, r'^\1', quote(s, for_cmd=False))
     i = re.finditer(r'(\\*)(\"+)|(\\+)|([^\\\"]+)', s)
-    def parts():
+    def parts() -> Iterator[str]:
         yield '"'
         for m in i:
             pos,end = m.span()
@@ -138,7 +140,7 @@ def quote(s, for_cmd=True):
         yield '"'
     return ''.join(parts())
 
-def split_cli():
+def split_cli() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -147,8 +149,9 @@ def split_cli():
                         help='file to split')
     args = parser.parse_args()
 
+
     if args.filename:
-        input = open(args.filename, 'r')
+        input = open(args.filename, 'r') # type: TextIO
     else:
         input = sys.stdin
 
