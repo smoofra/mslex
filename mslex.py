@@ -8,7 +8,7 @@ from typing import Iterator, List, Match, TextIO
 
 __all__ = ('split', 'quote')
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 def iter_arg(peek: Match[str], i: Iterator[Match[str]]) -> Iterator[str]:
     quote_mode = False
