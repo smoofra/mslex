@@ -10,7 +10,7 @@ __all__ = ('split', 'quote')
 
 __version__ = '0.3.0'
 
-def iter_arg(peek: Match, i: Iterator[Match]) -> Iterator[str]:
+def iter_arg(peek: Match[str], i: Iterator[Match[str]]) -> Iterator[str]:
     quote_mode = False
     for m in itertools.chain([peek], i):
         space, slashes, quotes, text = m.groups()
