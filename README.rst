@@ -22,8 +22,8 @@ shlex for windows
 Features
 --------
 
-This is the missing shlex package for windows shell quoting.   It provides two
-functions -- split and quote -- just like shlex.
+This is the missing shlex package for windows shell quoting.   It provides three
+functions -- split, quote, and join -- just like shlex.
 
 
 Credits
