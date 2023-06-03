@@ -43,6 +43,7 @@ setup(
     include_package_data=True,
     keywords='mslex',
     name='mslex',
+    package_data={'mslex': ['py.typed']},
     packages=['mslex'],
     setup_requires=setup_requirements,
     test_suite='tests',
