@@ -140,6 +140,25 @@ def quote(s: str, for_cmd: bool = True) -> str:
         yield '"'
     return ''.join(parts())
 
+def join(split_command: List[str], for_cmd: bool = True) -> str:
+    """
+    Quote and concatenate a list of strings for use as a command line in DOS or Windows.
+
+    On windows, before a command line argument becomes a char* in a
+    program's argv, it must be parsed by both cmd.exe, and by
+    CommandLineToArgvW.
+
+    If for_cmd is true, then this will quote the strings so the result will
+    be parsed correctly by cmd.exe and then by CommandLineToArgvW.
+
+    If for_cmd is false, then this will quote the strings so the result will
+    be parsed correctly when passed directly to CommandLineToArgvW.
+
+    For some strings there is no way to quote them so they will
+    parse correctly in both situations.
+    """
+    return ' '.join(quote(arg, for_cmd) for arg in split_command)
+
 def split_cli() -> None:
     import argparse
 
