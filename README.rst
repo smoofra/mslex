@@ -48,6 +48,9 @@ line arguments to your programs.   I recommend you read something else.
 .. _`Everyone quotes command line arguments the wrong way`:
   https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
 
+
+Thanks to Tamás Peregi for recent improvements to the package.
+
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
