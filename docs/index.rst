@@ -8,10 +8,10 @@ Welcome to mslex's documentation!
    readme
    installation
    usage
-   modules
    contributing
    authors
    history
+
 
 Indices and tables
 ==================
