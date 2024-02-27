@@ -10,7 +10,6 @@ Welcome to mslex's documentation!
    usage
    contributing
    authors
-   history
 
 
 Indices and tables

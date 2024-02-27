@@ -26,8 +26,8 @@ This is the missing shlex package for windows shell quoting.   It provides three
 functions -- split, quote, and join -- just like shlex.
 
 
-Credits
--------
+Windows Quoting
+---------------
 
 These are excellent articles to read if you really want to face the
 sanity-melting reality buried under the surface of how windows passes command
@@ -35,26 +35,14 @@ line arguments to your programs.   I recommend you read something else.
 
 * `How a Windows Program Splits Its Command Line Into Individual Arguments`_
 
-  * The original URL is now dead, but fortunately the article is `backed up on the Internet Archive`_
-
 * `Everyone quotes command line arguments the wrong way`_
 
 .. _`How a Windows Program Splits Its Command Line Into Individual Arguments`:
-  http://www.windowsinspired.com/how-a-windows-programs-splits-its-command-line-into-individual-arguments/
-
-.. _`backed up on the Internet Archive`:
-  https://web.archive.org/web/20220629212422/http://www.windowsinspired.com/how-a-windows-programs-splits-its-command-line-into-individual-arguments/
+   https://web.archive.org/web/20220629212422/http://www.windowsinspired.com/how-a-windows-programs-splits-its-command-line-into-individual-arguments/
 
 .. _`Everyone quotes command line arguments the wrong way`:
   https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
 
-
-Thanks to Tamás Peregi for recent improvements to the package.
-
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
-
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
 
 Automatic selection between mslex and shlex
 -------------------------------------------
