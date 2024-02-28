@@ -6,7 +6,7 @@ mslex
 .. image:: https://img.shields.io/pypi/v/mslex.svg
         :target: https://pypi.python.org/pypi/mslex
 
-.. image:: https://img.shields.io/travis/smoofra/mslex.svg
+.. image:: https://img.shields.io/travis/com/smoofra/mslex.svg
         :target: https://travis-ci.org/smoofra/mslex
 
 .. image:: https://readthedocs.org/projects/mslex/badge/?version=latest
