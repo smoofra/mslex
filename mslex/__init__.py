@@ -62,7 +62,7 @@ def split(s: str, like_cmd: bool = True, check: bool = True) -> List[str]:
     :param check: raise an error on unquoted metacharacters
     :return: a list of parsed words
 
-    If ``like_cmd`` is true, then this will emulate both cmd.exe and
+    If ``like_cmd`` is true, then this will emulate both ``cmd.exe`` and
     ``CommandLineToArgvW``.   Since ``cmd.exe`` is a shell, and can run
     external programs, this function obviously cannot emulate
     everything it does.   However if the string passed in would
