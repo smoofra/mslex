@@ -1,7 +1,7 @@
 
 version=1.1.0
 
-WHEEL=dist/mslex-$(version)-py2.py3-none-any.whl
+WHEEL=dist/mslex-$(version)-py3-none-any.whl
 SDIST=dist/mslex-$(version).tar.gz
 all: wheel sdist
 
@@ -22,7 +22,7 @@ docs doc &:
 wheel: $(WHEEL)
 sdist: $(SDIST)
 
-$(WHEEL) $(SDIST) &: setup.py mslex/*.py *.rst MANIFEST.in *.rst docs/* tests/*
+$(WHEEL) $(SDIST) &: setup.* mslex/*.py *.rst MANIFEST.in *.rst docs/* tests/*
 	python -m build
 
 publish: $(WHEEL) $(SDIST)
