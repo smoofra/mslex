@@ -15,9 +15,11 @@ import itertools
 
 from typing import Iterator, List, Match, TextIO
 
-__all__ = ("split", "quote", "join")
+from .exceptions import MSLexError
 
-__version__ = "1.1.0"
+__all__ = ("split", "quote", "join", "MSLexError")
+
+__version__ = "1.1.1"
 
 
 def iter_arg(peek: Match[str], i: Iterator[Match[str]]) -> Iterator[str]:
@@ -97,7 +99,9 @@ def split(s: str, like_cmd: bool = True, check: bool = True) -> List[str]:
                     if check:
                         meta = cmd_meta_inside_quotes if quote_mode else cmd_meta
                         if re.search(meta, text):
-                            raise ValueError("unquoted cmd metacharacters in string: " + repr(s))
+                            raise MSLexError(
+                                f"Unquoted CMD metacharacters in string: {repr(s)}"
+                            )
 
         s = "".join(i())
     return list(iter_args(s))
