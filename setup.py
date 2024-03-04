@@ -8,7 +8,7 @@ from setuptools import setup
 with open("README.rst") as readme_file:
     readme = readme_file.read()
 
-version = "1.1.0"
+version = "1.2.0"
 
 setup(
     author="Lawrence D'Anna",

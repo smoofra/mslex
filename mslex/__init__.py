@@ -19,7 +19,7 @@ from .exceptions import MSLexError
 
 __all__ = ("split", "quote", "join", "MSLexError")
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 
 def iter_arg(peek: Match[str], i: Iterator[Match[str]]) -> Iterator[str]:
