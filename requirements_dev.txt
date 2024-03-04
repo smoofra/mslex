@@ -8,3 +8,4 @@ coverage
 Sphinx
 twine
 black
+pytest
