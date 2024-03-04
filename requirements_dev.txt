@@ -10,3 +10,4 @@ twine
 black
 pytest
 types-setuptools
+build
