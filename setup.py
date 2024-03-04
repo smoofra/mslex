@@ -8,6 +8,8 @@ from setuptools import setup
 with open("README.rst") as readme_file:
     readme = readme_file.read()
 
+version = "1.1.0"
+
 setup(
     author="Lawrence D'Anna",
     author_email="larry@elder-gods.org",
@@ -40,6 +42,6 @@ setup(
     test_suite="tests",
     tests_require=[],
     url="https://github.com/smoofra/mslex",
-    version="1.1.0",
+    version=version,
     zip_safe=False,
 )
