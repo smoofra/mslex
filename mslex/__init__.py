@@ -99,9 +99,7 @@ def split(s: str, like_cmd: bool = True, check: bool = True) -> List[str]:
                     if check:
                         meta = cmd_meta_inside_quotes if quote_mode else cmd_meta
                         if re.search(meta, text):
-                            raise MSLexError(
-                                "Unquoted CMD metacharacters in string: " + repr(s)
-                            )
+                            raise MSLexError("Unquoted CMD metacharacters in string: " + repr(s))
 
         s = "".join(i())
     return list(iter_args(s))
