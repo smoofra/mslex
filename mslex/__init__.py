@@ -13,7 +13,7 @@ import sys
 import re
 import itertools
 
-from typing import Iterator, List, Match, TextIO
+from typing import Iterator, List, Match, TextIO  # noqa: F401
 
 from .exceptions import MSLexError
 
@@ -160,7 +160,8 @@ def quote(s: str, for_cmd: bool = True) -> str:
 
 def join(split_command: List[str], for_cmd: bool = True) -> str:
     """
-    Quote and concatenate a list of strings for use as a command line in DOS or Windows.
+    Quote and concatenate a list of strings for use as a command line in DOS
+    or Windows.
 
     :param split_command: a list of words to be quoted
     :param for_cmd: quote it for ``cmd.exe``
