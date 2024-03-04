@@ -100,7 +100,7 @@ def split(s: str, like_cmd: bool = True, check: bool = True) -> List[str]:
                         meta = cmd_meta_inside_quotes if quote_mode else cmd_meta
                         if re.search(meta, text):
                             raise MSLexError(
-                                f"Unquoted CMD metacharacters in string: {repr(s)}"
+                                "Unquoted CMD metacharacters in string: " + repr(s)
                             )
 
         s = "".join(i())
