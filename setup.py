@@ -43,5 +43,4 @@ setup(
     tests_require=[],
     url="https://github.com/smoofra/mslex",
     version=version,
-    zip_safe=False,
 )
