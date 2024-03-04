@@ -1,2 +1,2 @@
-class MSLexError(Exception):
+class MSLexError(ValueError):
     """Class for mslex errors"""
