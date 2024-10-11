@@ -82,15 +82,15 @@ def split(s: str, like_cmd: bool = True, check: bool = True) -> List[str]:
 
         def i() -> Iterator[str]:
             quote_mode = False
-            for m in re.finditer(r"(\^.)|(\")|([^\^\"]+)", s):
+            for m in re.finditer(r"(\^.?)|(\")|([^\^\"]+)", s):
                 escaped, quote, text = m.groups()
                 if escaped:
                     if quote_mode:
                         yield escaped
-                        if escaped[1] == '"':
+                        if len(escaped) > 1 and escaped[1] == '"':
                             quote_mode = False
                     else:
-                        yield escaped[1]
+                        yield escaped[1:]
                 elif quote:
                     yield '"'
                     quote_mode = not quote_mode

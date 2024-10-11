@@ -3,13 +3,17 @@
 
 """Tests for `mslex` package."""
 
+import os
 import sys
+import json
 import itertools
 import functools
 import unittest
 import subprocess
+from typing import List, cast, Any, Optional
 
 from mslex import split, quote
+
 
 if sys.platform == "win32":
     import ctypes
@@ -31,175 +35,258 @@ if sys.platform == "win32":
         return result
 
 
+def cmd_split(s: str) -> List[str]:
+    assert sys.platform == "win32"
+    script = os.path.join(os.path.dirname(__file__), "cmdline.py")
+    cmdline = script + " " + s
+    proc = subprocess.run(cmdline, shell=True, stdout=subprocess.PIPE, check=True)
+    args = json.loads(proc.stdout)["CommandLineToArgvW"]
+    return args[2:]  # first two args are "python.exe cmdline.py"
+
+
+class Example:
+    def __init__(self, input: str, output: List[str], cmd_output: Optional[List[str]] = None):
+        self.input = input
+        self.output = output
+        self.cmd_output = cmd_output if cmd_output is not None else output
+
+
 examples = [
-    (r"", []),
-    (r'"', [""]),
-    (r"x", ["x"]),
-    (r'x"', ["x"]),
-    (r"foo", ["foo"]),
-    (r'foo    "bar baz"', ["foo", "bar baz"]),
-    (r'"abc" d e', ["abc", "d", "e"]),
-    (r'a\\\b d"e f"g h', [r"a\\\b", "de fg", "h"]),
-    (r"a\\\"b c d", [r"a\"b", "c", "d"]),
-    (r'a\\\\"b c" d e', [r"a\\b c", "d", "e"]),
-    ('"" "" ""', ["", "", ""]),
-    ('" x', [" x"]),
-    ('"" x', ["", "x"]),
-    ('""" x', ['"', "x"]),
-    ('"""" x', ['" x']),
-    ('""""" x', ['"', "x"]),
-    ('"""""" x', ['""', "x"]),
-    ('""""""" x', ['"" x']),
-    ('"""""""" x', ['""', "x"]),
-    ('""""""""" x', ['"""', "x"]),
-    ('"""""""""" x', ['""" x']),
-    ('""""""""""" x', ['"""', "x"]),
-    ('"""""""""""" x', ['""""', "x"]),
-    ('""""""""""""" x', ['"""" x']),
-    ('"aaa x', ["aaa x"]),
-    ('"aaa" x', ["aaa", "x"]),
-    ('"aaa"" x', ['aaa"', "x"]),
-    ('"aaa""" x', ['aaa" x']),
-    ('"aaa"""" x', ['aaa"', "x"]),
-    ('"aaa""""" x', ['aaa""', "x"]),
-    ('"aaa"""""" x', ['aaa"" x']),
-    ('"aaa""""""" x', ['aaa""', "x"]),
-    ('"aaa"""""""" x', ['aaa"""', "x"]),
-    ('"aaa""""""""" x', ['aaa""" x']),
-    ('"aaa"""""""""" x', ['aaa"""', "x"]),
-    ('"aaa""""""""""" x', ['aaa""""', "x"]),
-    ('"aaa"""""""""""" x', ['aaa"""" x']),
-    ('"aaa\\ x', ["aaa\\ x"]),
-    ('"aaa\\" x', ['aaa" x']),
-    ('"aaa\\"" x', ['aaa"', "x"]),
-    ('"aaa\\""" x', ['aaa""', "x"]),
-    ('"aaa\\"""" x', ['aaa"" x']),
-    ('"aaa\\""""" x', ['aaa""', "x"]),
-    ('"aaa\\"""""" x', ['aaa"""', "x"]),
-    ('"aaa\\""""""" x', ['aaa""" x']),
-    ('"aaa\\"""""""" x', ['aaa"""', "x"]),
-    ('"aaa\\""""""""" x', ['aaa""""', "x"]),
-    ('"aaa\\"""""""""" x', ['aaa"""" x']),
-    ('"aaa\\""""""""""" x', ['aaa""""', "x"]),
-    ('"aaa\\"""""""""""" x', ['aaa"""""', "x"]),
-    ('"aaa\\\\ x', ["aaa\\\\ x"]),
-    ('"aaa\\\\" x', ["aaa\\", "x"]),
-    ('"aaa\\\\"" x', ['aaa\\"', "x"]),
-    ('"aaa\\\\""" x', ['aaa\\" x']),
-    ('"aaa\\\\"""" x', ['aaa\\"', "x"]),
-    ('"aaa\\\\""""" x', ['aaa\\""', "x"]),
-    ('"aaa\\\\"""""" x', ['aaa\\"" x']),
-    ('"aaa\\\\""""""" x', ['aaa\\""', "x"]),
-    ('"aaa\\\\"""""""" x', ['aaa\\"""', "x"]),
-    ('"aaa\\\\""""""""" x', ['aaa\\""" x']),
-    ('"aaa\\\\"""""""""" x', ['aaa\\"""', "x"]),
-    ('"aaa\\\\""""""""""" x', ['aaa\\""""', "x"]),
-    ('"aaa\\\\"""""""""""" x', ['aaa\\"""" x']),
-    ('"aaa\\\\\\ x', ["aaa\\\\\\ x"]),
-    ('"aaa\\\\\\" x', ['aaa\\" x']),
-    ('"aaa\\\\\\"" x', ['aaa\\"', "x"]),
-    ('"aaa\\\\\\""" x', ['aaa\\""', "x"]),
-    ('"aaa\\\\\\"""" x', ['aaa\\"" x']),
-    ('"aaa\\\\\\""""" x', ['aaa\\""', "x"]),
-    ('"aaa\\\\\\"""""" x', ['aaa\\"""', "x"]),
-    ('"aaa\\\\\\""""""" x', ['aaa\\""" x']),
-    ('"aaa\\\\\\"""""""" x', ['aaa\\"""', "x"]),
-    ('"aaa\\\\\\""""""""" x', ['aaa\\""""', "x"]),
-    ('"aaa\\\\\\"""""""""" x', ['aaa\\"""" x']),
-    ('"aaa\\\\\\""""""""""" x', ['aaa\\""""', "x"]),
-    ('"aaa\\\\\\"""""""""""" x', ['aaa\\"""""', "x"]),
-    ('"aaa\\\\\\\\ x', ["aaa\\\\\\\\ x"]),
-    ('"aaa\\\\\\\\" x', ["aaa\\\\", "x"]),
-    ('"aaa\\\\\\\\"" x', ['aaa\\\\"', "x"]),
-    ('"aaa\\\\\\\\""" x', ['aaa\\\\" x']),
-    ('"aaa\\\\\\\\"""" x', ['aaa\\\\"', "x"]),
-    ('"aaa\\\\\\\\""""" x', ['aaa\\\\""', "x"]),
-    ('"aaa\\\\\\\\"""""" x', ['aaa\\\\"" x']),
-    ('"aaa\\\\\\\\""""""" x', ['aaa\\\\""', "x"]),
-    ('"aaa\\\\\\\\"""""""" x', ['aaa\\\\"""', "x"]),
-    ('"aaa\\\\\\\\""""""""" x', ['aaa\\\\""" x']),
-    ('"aaa\\\\\\\\"""""""""" x', ['aaa\\\\"""', "x"]),
-    ('"aaa\\\\\\\\""""""""""" x', ['aaa\\\\""""', "x"]),
-    ('"aaa\\\\\\\\"""""""""""" x', ['aaa\\\\"""" x']),
-    (" x", ["x"]),
-    ('" x', [" x"]),
-    ('"" x', ["", "x"]),
-    ('""" x', ['"', "x"]),
-    ('"""" x', ['" x']),
-    ('""""" x', ['"', "x"]),
-    ('"""""" x', ['""', "x"]),
-    ('""""""" x', ['"" x']),
-    ('"""""""" x', ['""', "x"]),
-    ('""""""""" x', ['"""', "x"]),
-    ('"""""""""" x', ['""" x']),
-    ('""""""""""" x', ['"""', "x"]),
-    ('"""""""""""" x', ['""""', "x"]),
-    ("\\ x", ["\\", "x"]),
-    ('\\" x', ['"', "x"]),
-    ('\\"" x', ['" x']),
-    ('\\""" x', ['"', "x"]),
-    ('\\"""" x', ['""', "x"]),
-    ('\\""""" x', ['"" x']),
-    ('\\"""""" x', ['""', "x"]),
-    ('\\""""""" x', ['"""', "x"]),
-    ('\\"""""""" x', ['""" x']),
-    ('\\""""""""" x', ['"""', "x"]),
-    ('\\"""""""""" x', ['""""', "x"]),
-    ('\\""""""""""" x', ['"""" x']),
-    ('\\"""""""""""" x', ['""""', "x"]),
-    ("\\\\ x", ["\\\\", "x"]),
-    ('\\\\" x', ["\\ x"]),
-    ('\\\\"" x', ["\\", "x"]),
-    ('\\\\""" x', ['\\"', "x"]),
-    ('\\\\"""" x', ['\\" x']),
-    ('\\\\""""" x', ['\\"', "x"]),
-    ('\\\\"""""" x', ['\\""', "x"]),
-    ('\\\\""""""" x', ['\\"" x']),
-    ('\\\\"""""""" x', ['\\""', "x"]),
-    ('\\\\""""""""" x', ['\\"""', "x"]),
-    ('\\\\"""""""""" x', ['\\""" x']),
-    ('\\\\""""""""""" x', ['\\"""', "x"]),
-    ('\\\\"""""""""""" x', ['\\""""', "x"]),
-    ("\\\\\\ x", ["\\\\\\", "x"]),
-    ('\\\\\\" x', ['\\"', "x"]),
-    ('\\\\\\"" x', ['\\" x']),
-    ('\\\\\\""" x', ['\\"', "x"]),
-    ('\\\\\\"""" x', ['\\""', "x"]),
-    ('\\\\\\""""" x', ['\\"" x']),
-    ('\\\\\\"""""" x', ['\\""', "x"]),
-    ('\\\\\\""""""" x', ['\\"""', "x"]),
-    ('\\\\\\"""""""" x', ['\\""" x']),
-    ('\\\\\\""""""""" x', ['\\"""', "x"]),
-    ('\\\\\\"""""""""" x', ['\\""""', "x"]),
-    ('\\\\\\""""""""""" x', ['\\"""" x']),
-    ('\\\\\\"""""""""""" x', ['\\""""', "x"]),
-    ("\\\\\\\\ x", ["\\\\\\\\", "x"]),
-    ('\\\\\\\\" x', ["\\\\ x"]),
-    ('\\\\\\\\"" x', ["\\\\", "x"]),
-    ('\\\\\\\\""" x', ['\\\\"', "x"]),
-    ('\\\\\\\\"""" x', ['\\\\" x']),
-    ('\\\\\\\\""""" x', ['\\\\"', "x"]),
-    ('\\\\\\\\"""""" x', ['\\\\""', "x"]),
-    ('\\\\\\\\""""""" x', ['\\\\"" x']),
-    ('\\\\\\\\"""""""" x', ['\\\\""', "x"]),
-    ('\\\\\\\\""""""""" x', ['\\\\"""', "x"]),
-    ('\\\\\\\\"""""""""" x', ['\\\\""" x']),
-    ('\\\\\\\\""""""""""" x', ['\\\\"""', "x"]),
-    ('\\\\\\\\"""""""""""" x', ['\\\\""""', "x"]),
+    Example(r"", []),
+    Example(r'"', [""]),
+    Example(r'""', [""]),
+    Example(r'"""', ['"']),
+    Example(r'""""', ['"']),
+    Example(r'"""""', ['"']),
+    Example(r'""""""', ['""']),
+    Example(r'"""""""', ['""']),
+    Example(r'""""""""', ['""']),
+    Example(r'"""""""""', ['"""']),
+    Example(r'""""""""""', ['"""']),
+    Example(r' "', [""]),
+    Example(r' ""', [""]),
+    Example(r' """', ['"']),
+    Example(r' """"', ['"']),
+    Example(r' """""', ['"']),
+    Example(r' """"""', ['""']),
+    Example(r' """""""', ['""']),
+    Example(r' """"""""', ['""']),
+    Example(r' """"""""""', ['"""']),
+    Example(r" ", []),
+    Example(r'" ', [" "]),
+    Example(r'"" ', [""]),
+    Example(r'""" ', ['"']),
+    Example(r'"""" ', ['" ']),
+    Example(r'""""" ', ['"']),
+    Example(r'"""""" ', ['""']),
+    Example(r'""""""" ', ['"" ']),
+    Example(r'"""""""" ', ['""']),
+    Example(r'"""""""""" ', ['""" ']),
+    Example(r"x", ["x"]),
+    Example(r'x"', ["x"]),
+    Example(r"foo", ["foo"]),
+    Example(r'foo    "bar baz"', ["foo", "bar baz"]),
+    Example(r'"abc" d e', ["abc", "d", "e"]),
+    Example(r'a\\\b d"e f"g h', [r"a\\\b", "de fg", "h"]),
+    Example(r"a\\\"b c d", [r"a\"b", "c", "d"]),
+    Example(r'a\\\\"b c" d e', [r"a\\b c", "d", "e"]),
+    Example('"" "" ""', ["", "", ""]),
+    Example('" x', [" x"]),
+    Example('"" x', ["", "x"]),
+    Example('""" x', ['"', "x"]),
+    Example('"""" x', ['" x']),
+    Example('""""" x', ['"', "x"]),
+    Example('"""""" x', ['""', "x"]),
+    Example('""""""" x', ['"" x']),
+    Example('"""""""" x', ['""', "x"]),
+    Example('""""""""" x', ['"""', "x"]),
+    Example('"""""""""" x', ['""" x']),
+    Example('""""""""""" x', ['"""', "x"]),
+    Example('"""""""""""" x', ['""""', "x"]),
+    Example('""""""""""""" x', ['"""" x']),
+    Example('"aaa x', ["aaa x"]),
+    Example('"aaa" x', ["aaa", "x"]),
+    Example('"aaa"" x', ['aaa"', "x"]),
+    Example('"aaa""" x', ['aaa" x']),
+    Example('"aaa"""" x', ['aaa"', "x"]),
+    Example('"aaa""""" x', ['aaa""', "x"]),
+    Example('"aaa"""""" x', ['aaa"" x']),
+    Example('"aaa""""""" x', ['aaa""', "x"]),
+    Example('"aaa"""""""" x', ['aaa"""', "x"]),
+    Example('"aaa""""""""" x', ['aaa""" x']),
+    Example('"aaa"""""""""" x', ['aaa"""', "x"]),
+    Example('"aaa""""""""""" x', ['aaa""""', "x"]),
+    Example('"aaa"""""""""""" x', ['aaa"""" x']),
+    Example('"aaa\\ x', ["aaa\\ x"]),
+    Example('"aaa\\" x', ['aaa" x']),
+    Example('"aaa\\"" x', ['aaa"', "x"]),
+    Example('"aaa\\""" x', ['aaa""', "x"]),
+    Example('"aaa\\"""" x', ['aaa"" x']),
+    Example('"aaa\\""""" x', ['aaa""', "x"]),
+    Example('"aaa\\"""""" x', ['aaa"""', "x"]),
+    Example('"aaa\\""""""" x', ['aaa""" x']),
+    Example('"aaa\\"""""""" x', ['aaa"""', "x"]),
+    Example('"aaa\\""""""""" x', ['aaa""""', "x"]),
+    Example('"aaa\\"""""""""" x', ['aaa"""" x']),
+    Example('"aaa\\""""""""""" x', ['aaa""""', "x"]),
+    Example('"aaa\\"""""""""""" x', ['aaa"""""', "x"]),
+    Example('"aaa\\\\ x', ["aaa\\\\ x"]),
+    Example('"aaa\\\\" x', ["aaa\\", "x"]),
+    Example('"aaa\\\\"" x', ['aaa\\"', "x"]),
+    Example('"aaa\\\\""" x', ['aaa\\" x']),
+    Example('"aaa\\\\"""" x', ['aaa\\"', "x"]),
+    Example('"aaa\\\\""""" x', ['aaa\\""', "x"]),
+    Example('"aaa\\\\"""""" x', ['aaa\\"" x']),
+    Example('"aaa\\\\""""""" x', ['aaa\\""', "x"]),
+    Example('"aaa\\\\"""""""" x', ['aaa\\"""', "x"]),
+    Example('"aaa\\\\""""""""" x', ['aaa\\""" x']),
+    Example('"aaa\\\\"""""""""" x', ['aaa\\"""', "x"]),
+    Example('"aaa\\\\""""""""""" x', ['aaa\\""""', "x"]),
+    Example('"aaa\\\\"""""""""""" x', ['aaa\\"""" x']),
+    Example('"aaa\\\\\\ x', ["aaa\\\\\\ x"]),
+    Example('"aaa\\\\\\" x', ['aaa\\" x']),
+    Example('"aaa\\\\\\"" x', ['aaa\\"', "x"]),
+    Example('"aaa\\\\\\""" x', ['aaa\\""', "x"]),
+    Example('"aaa\\\\\\"""" x', ['aaa\\"" x']),
+    Example('"aaa\\\\\\""""" x', ['aaa\\""', "x"]),
+    Example('"aaa\\\\\\"""""" x', ['aaa\\"""', "x"]),
+    Example('"aaa\\\\\\""""""" x', ['aaa\\""" x']),
+    Example('"aaa\\\\\\"""""""" x', ['aaa\\"""', "x"]),
+    Example('"aaa\\\\\\""""""""" x', ['aaa\\""""', "x"]),
+    Example('"aaa\\\\\\"""""""""" x', ['aaa\\"""" x']),
+    Example('"aaa\\\\\\""""""""""" x', ['aaa\\""""', "x"]),
+    Example('"aaa\\\\\\"""""""""""" x', ['aaa\\"""""', "x"]),
+    Example('"aaa\\\\\\\\ x', ["aaa\\\\\\\\ x"]),
+    Example('"aaa\\\\\\\\" x', ["aaa\\\\", "x"]),
+    Example('"aaa\\\\\\\\"" x', ['aaa\\\\"', "x"]),
+    Example('"aaa\\\\\\\\""" x', ['aaa\\\\" x']),
+    Example('"aaa\\\\\\\\"""" x', ['aaa\\\\"', "x"]),
+    Example('"aaa\\\\\\\\""""" x', ['aaa\\\\""', "x"]),
+    Example('"aaa\\\\\\\\"""""" x', ['aaa\\\\"" x']),
+    Example('"aaa\\\\\\\\""""""" x', ['aaa\\\\""', "x"]),
+    Example('"aaa\\\\\\\\"""""""" x', ['aaa\\\\"""', "x"]),
+    Example('"aaa\\\\\\\\""""""""" x', ['aaa\\\\""" x']),
+    Example('"aaa\\\\\\\\"""""""""" x', ['aaa\\\\"""', "x"]),
+    Example('"aaa\\\\\\\\""""""""""" x', ['aaa\\\\""""', "x"]),
+    Example('"aaa\\\\\\\\"""""""""""" x', ['aaa\\\\"""" x']),
+    Example(" x", ["x"]),
+    Example('" x', [" x"]),
+    Example('"" x', ["", "x"]),
+    Example('""" x', ['"', "x"]),
+    Example('"""" x', ['" x']),
+    Example('""""" x', ['"', "x"]),
+    Example('"""""" x', ['""', "x"]),
+    Example('""""""" x', ['"" x']),
+    Example('"""""""" x', ['""', "x"]),
+    Example('""""""""" x', ['"""', "x"]),
+    Example('"""""""""" x', ['""" x']),
+    Example('""""""""""" x', ['"""', "x"]),
+    Example('"""""""""""" x', ['""""', "x"]),
+    Example("\\ x", ["\\", "x"]),
+    Example('\\" x', ['"', "x"]),
+    Example('\\"" x', ['" x']),
+    Example('\\""" x', ['"', "x"]),
+    Example('\\"""" x', ['""', "x"]),
+    Example('\\""""" x', ['"" x']),
+    Example('\\"""""" x', ['""', "x"]),
+    Example('\\""""""" x', ['"""', "x"]),
+    Example('\\"""""""" x', ['""" x']),
+    Example('\\""""""""" x', ['"""', "x"]),
+    Example('\\"""""""""" x', ['""""', "x"]),
+    Example('\\""""""""""" x', ['"""" x']),
+    Example('\\"""""""""""" x', ['""""', "x"]),
+    Example("\\\\ x", ["\\\\", "x"]),
+    Example('\\\\" x', ["\\ x"]),
+    Example('\\\\"" x', ["\\", "x"]),
+    Example('\\\\""" x', ['\\"', "x"]),
+    Example('\\\\"""" x', ['\\" x']),
+    Example('\\\\""""" x', ['\\"', "x"]),
+    Example('\\\\"""""" x', ['\\""', "x"]),
+    Example('\\\\""""""" x', ['\\"" x']),
+    Example('\\\\"""""""" x', ['\\""', "x"]),
+    Example('\\\\""""""""" x', ['\\"""', "x"]),
+    Example('\\\\"""""""""" x', ['\\""" x']),
+    Example('\\\\""""""""""" x', ['\\"""', "x"]),
+    Example('\\\\"""""""""""" x', ['\\""""', "x"]),
+    Example("\\\\\\ x", ["\\\\\\", "x"]),
+    Example('\\\\\\" x', ['\\"', "x"]),
+    Example('\\\\\\"" x', ['\\" x']),
+    Example('\\\\\\""" x', ['\\"', "x"]),
+    Example('\\\\\\"""" x', ['\\""', "x"]),
+    Example('\\\\\\""""" x', ['\\"" x']),
+    Example('\\\\\\"""""" x', ['\\""', "x"]),
+    Example('\\\\\\""""""" x', ['\\"""', "x"]),
+    Example('\\\\\\"""""""" x', ['\\""" x']),
+    Example('\\\\\\""""""""" x', ['\\"""', "x"]),
+    Example('\\\\\\"""""""""" x', ['\\""""', "x"]),
+    Example('\\\\\\""""""""""" x', ['\\"""" x']),
+    Example('\\\\\\"""""""""""" x', ['\\""""', "x"]),
+    Example("\\\\\\\\ x", ["\\\\\\\\", "x"]),
+    Example('\\\\\\\\" x', ["\\\\ x"]),
+    Example('\\\\\\\\"" x', ["\\\\", "x"]),
+    Example('\\\\\\\\""" x', ['\\\\"', "x"]),
+    Example('\\\\\\\\"""" x', ['\\\\" x']),
+    Example('\\\\\\\\""""" x', ['\\\\"', "x"]),
+    Example('\\\\\\\\"""""" x', ['\\\\""', "x"]),
+    Example('\\\\\\\\""""""" x', ['\\\\"" x']),
+    Example('\\\\\\\\"""""""" x', ['\\\\""', "x"]),
+    Example('\\\\\\\\""""""""" x', ['\\\\"""', "x"]),
+    Example('\\\\\\\\"""""""""" x', ['\\\\""" x']),
+    Example('\\\\\\\\""""""""""" x', ['\\\\"""', "x"]),
+    Example('\\\\\\\\"""""""""""" x', ['\\\\""""', "x"]),
+    Example('"x"', ["x"]),
+    Example('"^x"', ["^x"]),
+    Example('"^^x"', ["^^x"]),
+    Example('"x', ["x"]),
+    Example('"^x', ["^x"]),
+    Example('"^^x', ["^^x"]),
+    Example('"', [""]),
+    Example('"^', ["^"]),
+    Example('"^^', ["^^"]),
+    Example('"^ ', ["^ "]),
+    Example(":dir", [":dir"]),
+    Example(";;;a,, b, c===", [";;;a,,", "b,", "c==="]),
+    Example("^;;a", ["^;;a"], [";;a"]),
+    Example('a "<>||&&', ["a", "<>||&&"]),
+    Example('a "<>||&&^', ["a", "<>||&&^"]),
+    Example('a "<>||&&^^', ["a", "<>||&&^^"]),
+    Example('"foo &whoami bar"', ["foo &whoami bar"]),
+    Example("^^", ["^^"], ["^"]),
+    Example('"^"', ["^"]),
+    Example('"^^"', ["^^"]),
+    Example("foo^bar", ["foo^bar"], ["foobar"]),
+    Example("foo^^bar", ["foo^^bar"], ["foo^bar"]),
+    Example('"foo^bar"', ["foo^bar"]),
+    Example('"foo^^bar"', ["foo^^bar"]),
+    Example('"x"', ["x"]),
+    Example('"^x"', ["^x"]),
+    Example('"^^x"', ["^^x"]),
+    Example('"x', ["x"]),
+    Example('"^x', ["^x"]),
+    Example('"^^x', ["^^x"]),
+    Example('"', [""]),
+    Example('"^', ["^"]),
+    Example('"^^', ["^^"]),
+    Example('"^ ', ["^ "]),
+    Example(":dir", [":dir"]),
+    Example(";;;a,, b, c===", [";;;a,,", "b,", "c==="]),
+    Example('a "<>||&&', ["a", "<>||&&"]),
+    Example('a "<>||&&^', ["a", "<>||&&^"]),
+    Example('a "<>||&&^^', ["a", "<>||&&^^"]),
+    Example("foo", ["foo"]),
+    Example("foo^", ["foo^"], ["foo"]),
+    Example("foo^^", ["foo^^"], ["foo^"]),
+    Example("foo^^^", ["foo^^^"], ["foo^"]),
+    Example("foo^^^^", ["foo^^^^"], ["foo^^"]),
+    Example("foo^ bar", ["foo^", "bar"], ["foo", "bar"]),
+    Example("foo^^ bar", ["foo^^", "bar"], ["foo^", "bar"]),
+    Example("foo^^^ bar", ["foo^^^", "bar"], ["foo^", "bar"]),
+    Example("foo^^^^ bar", ["foo^^^^", "bar"], ["foo^^", "bar"]),
+    Example('"foo^" bar', ["foo^", "bar"], ["foo^", "bar"]),
+    Example('"foo^^" bar', ["foo^^", "bar"], ["foo^^", "bar"]),
+    Example('"foo^^^" bar', ["foo^^^", "bar"], ["foo^^^", "bar"]),
+    Example('"foo^^^^" bar', ["foo^^^^", "bar"], ["foo^^^^", "bar"]),
 ]
-
-
-cmd_examples = [
-    (r'"foo &whoami bar"', ["foo &whoami bar"]),
-    (r"^^", ["^"]),
-    (r'"^"', ["^"]),
-    (r'"^^"', ["^^"]),
-    (r"foo^bar", ["foobar"]),
-    (r"foo^^bar", ["foo^bar"]),
-    (r'"foo^bar"', ["foo^bar"]),
-    (r'"foo^^bar"', ["foo^^bar"]),
-]
-
 
 pretty_examples = [
     (r"c:\Program Files\FooBar", r'"c:\Program Files\FooBar"'),
@@ -221,12 +308,14 @@ pretty_examples = [
 class TestMslex(unittest.TestCase):
     """Tests for `mslex` package."""
 
-    def case(self, s, ans, cmd):
+    def case(self, s: str, ans: str, cmd: bool) -> None:
+        if sys.platform == "win32":
+            win_split = cmd_split if cmd else ctypes_split
         try:
             if ans is not None:
                 self.assertEqual(split(s, like_cmd=cmd), ans)
-            if sys.platform == "win32" and not cmd:
-                self.assertEqual(split(s), ctypes_split(s))
+            if sys.platform == "win32":
+                self.assertEqual(split(s, like_cmd=cmd), win_split(s))
         except AssertionError:
             print("in: «{}»".format(s))
             print()
@@ -238,7 +327,7 @@ class TestMslex(unittest.TestCase):
                     print("ans: «{}»".format(x))
                 print()
             if sys.platform == "win32":
-                for x in ctypes_split(s):
+                for x in win_split(s):
                     print("win: «{}»".format(x))
                 print()
             raise
@@ -273,30 +362,36 @@ class TestMslex(unittest.TestCase):
                     self.case(s, None, False)
 
     def test_examples(self):
-        for s, ans in examples:
-            self.case(s, ans, cmd=False)
+        for e in examples:
+            self.case(e.input, e.output, cmd=False)
 
     def test_examples_for_cmd(self):
-        for s, ans in cmd_examples:
-            self.case(s, ans, cmd=True)
+        for e in examples:
+            self.case(e.input, e.cmd_output, cmd=True)
 
     def test_quote_examples(self):
         qu = functools.partial(quote, for_cmd=False)
         sp = functools.partial(split, like_cmd=False)
-        for s, ans in itertools.chain(examples, cmd_examples):
-            self.assertEqual(ans, sp(" ".join(map(qu, ans))))
+        for e in examples:
+            self.assertEqual(e.output, sp(" ".join(map(qu, e.output))))
+            if e.output == e.cmd_output:
+                continue
+            self.assertEqual(e.cmd_output, sp(" ".join(map(qu, e.cmd_output))))
 
     def test_quote_examples_cmd(self):
-        for s, ans in itertools.chain(examples, cmd_examples):
-            self.assertEqual(ans, split(" ".join(map(quote, ans))))
+        for e in examples:
+            self.assertEqual(e.output, split(" ".join(map(quote, e.output))))
+            if e.output == e.cmd_output:
+                continue
+            self.assertEqual(e.cmd_output, split(" ".join(map(quote, e.cmd_output))))
 
     def test_requote_examples_cmd(self):
-        for s, ans in examples:
-            self.assertEqual([s], split(quote(s)))
+        for e in examples:
+            self.assertEqual([e.input], split(quote(e.input)))
 
     def test_requote_examples(self):
-        for s, ans in examples:
-            self.assertEqual([s], split(quote(s, for_cmd=False), like_cmd=False))
+        for e in examples:
+            self.assertEqual([e.input], split(quote(e.input, for_cmd=False), like_cmd=False))
 
     def test_quote_every_string(self):
         def every_string():
