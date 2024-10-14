@@ -27,7 +27,7 @@ __all__ = (
     "MSLexError",
 )
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 
 def _iter_arg_msvcrt(peek: Match[str], i: Iterator[Match[str]]) -> Iterator[str]:

@@ -1,5 +1,5 @@
 
-version=1.2.0
+version=1.3.0
 
 WHEEL=dist/mslex-$(version)-py3-none-any.whl
 SDIST=dist/mslex-$(version).tar.gz
