@@ -11,3 +11,5 @@ black
 pytest
 types-setuptools
 build
+trio
+tqdm

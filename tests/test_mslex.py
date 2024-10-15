@@ -11,9 +11,11 @@ import functools
 import unittest
 import subprocess
 from typing import List, cast, Any, Optional
+from pathlib import Path
 
-from mslex import split, quote
+from mslex import split, quote, split_msvcrt, split_ucrt, strip_carets_like_cmd, MSLexError
 
+testdir = Path(__file__).parent
 
 if sys.platform == "win32":
     import ctypes
@@ -34,6 +36,15 @@ if sys.platform == "win32":
         LocalFree(argv)
         return result
 
+    def ctypes_split_exe(s):
+        if s == "":
+            return []
+        argc = ctypes.c_int()
+        argv = CommandLineToArgvW(s, ctypes.byref(argc))
+        result = [argv[i] for i in range(argc.value)]
+        LocalFree(argv)
+        return result
+
 
 def cmd_split(s: str) -> List[str]:
     assert sys.platform == "win32"
@@ -42,6 +53,38 @@ def cmd_split(s: str) -> List[str]:
     proc = subprocess.run(cmdline, shell=True, stdout=subprocess.PIPE, check=True)
     args = json.loads(proc.stdout)["CommandLineToArgvW"]
     return args[2:]  # first two args are "python.exe cmdline.py"
+
+
+class CSVExample:
+
+    def __init__(self, s: str, cmdline: str, split_msvcrt: List[str], split_ucrt: List[str]):
+        self.s = s
+        self.cmdline = cmdline
+        self.split_msvcrt = split_msvcrt
+        self.split_ucrt = split_ucrt
+
+    @staticmethod
+    def split_argv(s: str) -> List[str]:
+        if not s:
+            return []
+        return s.removesuffix(";").split(";")
+
+    @staticmethod
+    def join_argv(v: List[str]) -> str:
+        if not v:
+            return ""
+        return ";".join(v) + ";"
+
+    @classmethod
+    def loads(cls, line: str):
+        (s, cmdline, *splits, _) = line.split(",")
+        (split_msvcrt, split_ucrt) = map(cls.split_argv, splits)
+        return cls(s, cmdline, split_msvcrt, split_ucrt)
+
+    def dumps(self):
+        msvcrt = self.join_argv(self.split_msvcrt)
+        ucrt = self.join_argv(self.split_ucrt)
+        return ",".join([self.s, self.cmdline, msvcrt, ucrt, ""])
 
 
 class Example:
@@ -291,31 +334,54 @@ examples = [
 pretty_examples = [
     (r"c:\Program Files\FooBar", r'"c:\Program Files\FooBar"'),
     (r"c:\Program Files (x86)\FooBar", r'"c:\Program Files (x86)\FooBar"'),
-    (r"^", '"^"'),
-    (r" ^", '" ^"'),
-    (r"&", '"&"'),
-    (r"!", "^!"),
-    (r"!foo!", "^!foo^!"),
+    ("^", "^^"),
+    (" ^", '" ^"'),
+    ("&", "^&"),
+    ("!", "^!"),
+    (r"%foo%", r"^%foo^%"),
+    ("!foo!", "^!foo^!"),
+    ("foo bar!", '"foo bar"^!'),
+    ("!foo bar!", '^!"foo bar"^!'),
     ("foo\\bar\\baz\\", "foo\\bar\\baz\\"),
     ("foo bar\\baz\\", '"foo bar\\baz\\\\"'),
     ("foo () bar\\baz\\", '"foo () bar\\baz\\\\"'),
     ("foo () bar\\baz\\\\", '"foo () bar\\baz\\\\\\\\"'),
     ("foo () bar\\baz\\\\\\", '"foo () bar\\baz\\\\\\\\\\\\"'),
     ("foo () bar\\baz\\\\\\\\", '"foo () bar\\baz\\\\\\\\\\\\\\\\"'),
+    (r"foo\bar! baz", r'foo\bar^!" baz"'),
+    (r"x\!", r"x\^!"),
+    ("foo\\", "foo\\"),
+    ("\\", "\\"),
+]
+
+pretty_examples_not_cmd = [
+    ("\\", "\\"),
+    ("foo", "foo"),
+    ("foo\\", "foo\\"),
+    ("foo!", "foo!"),
+    ("foo bar", '"foo bar"'),
+    (r"foo\bar", r"foo\bar"),
+    (r'foo"bar', r"foo\"bar"),
 ]
 
 
 class TestMslex(unittest.TestCase):
     """Tests for `mslex` package."""
 
-    def case(self, s: str, ans: str, cmd: bool) -> None:
+    def case(
+        self, s: str, ans: str, cmd: bool, exe: bool = False, ucrt: Optional[bool] = None
+    ) -> None:
+        assert not (cmd and exe)
         if sys.platform == "win32":
             win_split = cmd_split if cmd else ctypes_split
+            if exe:
+                win_split = ctypes_split_exe
         try:
+            v = split(s, like_cmd=cmd, ucrt=ucrt)
             if ans is not None:
-                self.assertEqual(split(s, like_cmd=cmd), ans)
+                self.assertEqual(v, ans)
             if sys.platform == "win32":
-                self.assertEqual(split(s, like_cmd=cmd), win_split(s))
+                self.assertEqual(v, win_split(s))
         except AssertionError:
             print("in: «{}»".format(s))
             print()
@@ -347,7 +413,7 @@ class TestMslex(unittest.TestCase):
                 yield "".join(x)
 
         for s in every_string():
-            self.case(s, None, cmd=False)
+            self.case(s, None, cmd=False, ucrt=False)
 
     @unittest.skipUnless(sys.platform == "win32", "requires Windows")
     def test_multi_quotes(self):
@@ -359,39 +425,65 @@ class TestMslex(unittest.TestCase):
                     else:
                         s = ""
                     s += "\\" * m + '"' * n + " x"
-                    self.case(s, None, False)
+                    self.case(s, None, cmd=False, ucrt=False)
 
     def test_examples(self):
         for e in examples:
-            self.case(e.input, e.output, cmd=False)
+            self.case(e.input, e.output, cmd=False, ucrt=False)
 
     def test_examples_for_cmd(self):
         for e in examples:
-            self.case(e.input, e.cmd_output, cmd=True)
+            self.case(e.input, e.cmd_output, cmd=True, ucrt=False)
 
     def test_quote_examples(self):
         qu = functools.partial(quote, for_cmd=False)
         sp = functools.partial(split, like_cmd=False)
         for e in examples:
-            self.assertEqual(e.output, sp(" ".join(map(qu, e.output))))
-            if e.output == e.cmd_output:
-                continue
-            self.assertEqual(e.cmd_output, sp(" ".join(map(qu, e.cmd_output))))
+            try:
+                output = e.output
+                self.assertEqual(e.output, sp(" ".join(map(qu, output))))
+                if e.output == e.cmd_output:
+                    continue
+                output = e.cmd_output
+                self.assertEqual(e.cmd_output, sp(" ".join(map(qu, output))))
+            except AssertionError:
+                print("in: «{}»".format(output))
+                print("quoted: «{}»".format(quote(output)))
+                raise
 
     def test_quote_examples_cmd(self):
         for e in examples:
-            self.assertEqual(e.output, split(" ".join(map(quote, e.output))))
-            if e.output == e.cmd_output:
-                continue
-            self.assertEqual(e.cmd_output, split(" ".join(map(quote, e.cmd_output))))
+            try:
+                output = e.output
+                self.assertEqual(e.output, split(" ".join(map(quote, output))))
+                if e.output == e.cmd_output:
+                    continue
+                output = e.cmd_output
+                self.assertEqual(e.cmd_output, split(" ".join(map(quote, output))))
+            except AssertionError:
+                print("in: «{}»".format(output))
+                print("quoted: «{}»".format(quote(output)))
+                raise
 
     def test_requote_examples_cmd(self):
         for e in examples:
-            self.assertEqual([e.input], split(quote(e.input)))
+            try:
+                self.assertEqual([e.input], split(quote(e.input)))
+            except AssertionError:
+                print("in: «{}»".format(e.input))
+                print("quoted: «{}»".format(quote(e.input)))
+                for i, s in enumerate(split(quote(e.input))):
+                    print("split[{}]: «{}»".format(i, s))
+                raise
 
     def test_requote_examples(self):
         for e in examples:
-            self.assertEqual([e.input], split(quote(e.input, for_cmd=False), like_cmd=False))
+            try:
+                self.assertEqual([e.input], split(quote(e.input, for_cmd=False), like_cmd=False))
+            except AssertionError:
+                print("in: «{}»".format(e.input))
+                print("quoted: «{}»".format(quote(e.input, for_cmd=False)))
+                raise
 
     def test_quote_every_string(self):
         def every_string():
@@ -413,9 +505,14 @@ class TestMslex(unittest.TestCase):
                 yield "".join(x)
 
         for s in every_string():
-            q = quote(s)
-            self.assertEqual([s], split(q))
-            self.assertEqual([s, s], split("{} {}".format(q, q)))
+            try:
+                q = quote(s)
+                self.assertEqual([s], split(q))
+                self.assertEqual([s, s], split("{} {}".format(q, q)))
+            except AssertionError:
+                print("in: «{}»".format(s))
+                print("quoted: «{}»".format(q))
+                raise
 
     @unittest.skipUnless(sys.platform == "win32", "requires Windows")
     def test_quote_every_string_using_cmd(self):
@@ -437,6 +534,101 @@ class TestMslex(unittest.TestCase):
 
     def test_pretty_examples(self):
         for s, ans in pretty_examples:
-            self.assertEqual(quote(s), ans)
-            self.assertEqual(split(ans), [s])
-            self.assertEqual(split(ans + " " + ans + " foo bar"), [s, s, "foo", "bar"])
+            try:
+                self.assertEqual(quote(s), ans)
+                self.assertEqual(split(ans), [s])
+                self.assertEqual(split(ans + " " + ans + " foo bar"), [s, s, "foo", "bar"])
+            except AssertionError:
+                print("in: «{}»".format(s))
+                print("quoted: «{}»".format(quote(s)))
+                print("expected: «{}»".format(ans))
+                raise
+
+    def test_pretty_examples_not_cmd(self):
+        for s, ans in pretty_examples_not_cmd:
+            try:
+                self.assertEqual(quote(s, for_cmd=False), ans)
+                self.assertEqual(split(ans, like_cmd=False), [s])
+                self.assertEqual(split(ans + " " + ans, like_cmd=False), [s, s])
+            except AssertionError:
+                print("in: «{}»".format(s))
+                print("quoted: «{}»".format(quote(s)))
+                print("expected: «{}»".format(ans))
+                raise
+
+    def test_examples_csv(self):
+        csv = testdir / "examples.csv"
+        if not csv.exists():
+            self.skipTest("%s missing.  clone from github" % csv)
+        with open(str(csv), "r") as f:
+            if next(iter(f)).startswith("version https://git-lfs.github.com/spec/"):
+                self.skipTest("%s not downloaded.  turn on git-lfs." % csv)
+        with open(str(csv), "r") as f:
+            for line in f:
+                try:
+                    e = CSVExample.loads(line)
+                    self.assertEqual(e.split_ucrt, split_ucrt(e.cmdline))
+                    self.assertEqual(e.split_msvcrt, split_msvcrt(e.cmdline))
+                    try:
+                        self.assertEqual(e.split_msvcrt, split(e.s))
+                    except MSLexError as err:
+                        assert "ambiguous" in str(err)
+                        assert e.split_ucrt != e.split_msvcrt
+                    else:
+                        assert e.split_ucrt == e.split_msvcrt
+                    self.assertEqual(e.cmdline.lstrip(), strip_carets_like_cmd(e.s).lstrip())
+                    q = quote(e.s)
+                    self.assertEqual([e.s], split(q))
+                    self.assertEqual([e.s, e.s], split(q + " " + q))
+                    q = quote(e.s, for_cmd=False)
+                    self.assertEqual([e.s], split(q, like_cmd=False))
+                    self.assertEqual([e.s, e.s], split(q + " " + q, like_cmd=False))
+                except AssertionError:
+                    print("s: «{}»".format(e.s))
+                    print("cmdline: «{}»".format(e.cmdline))
+                    try:
+                        print("q: «{}»".format(q))
+                    except NameError:
+                        pass
+                    raise
+
+    def test_unquoted(self):
+        bad = [
+            "foo && bar",
+            "foo || bar",
+            "foo >bar",
+            "foo <bar",
+            "&whoami",
+            "!foo!",
+            r"%foo%",
+            '"!foo!"',
+            '"^!foo!"',
+            '"^!foo^!"',
+            r'"%foo%"',
+            r'"^%foo%"',
+            r'"^%foo^%"',
+            "(foo)",
+        ]
+        for s in bad:
+            try:
+                split(s)
+            except MSLexError as err:
+                assert "Unquoted CMD metacharacters" in str(err)
+            else:
+                print("s: «{}»".format(s))
+                print("stripped: «{}»".format(strip_carets_like_cmd(s)))
+                self.fail("expected exception")
+        good = [
+            '"foo && bar"',
+            '"foo || bar"',
+            'foo ">bar"',
+            'foo "<bar"',
+            '"&whoami"',
+            "^!foo^!",
+            r"^%foo^%",
+            '^!"foo"^!',
+            r'^%"foo"^%',
+            '"(foo)"',
+        ]
+        for s in good:
+            split(s)
