@@ -88,10 +88,23 @@ class CSVExample:
 
 
 class Example:
-    def __init__(self, input: str, output: List[str], cmd_output: Optional[List[str]] = None):
+    def __init__(
+        self,
+        input: str,
+        output: List[str],
+        cmd: Optional[List[str]] = None,
+        ucrt: Optional[List[str]] = None,
+    ):
         self.input = input
         self.output = output
-        self.cmd_output = cmd_output if cmd_output is not None else output
+        self.cmd_output = cmd if cmd is not None else output
+        self.ucrt_output = ucrt if ucrt is not None else output
+        if cmd:
+            self.ucrt_cmd_output = cmd
+        elif ucrt:
+            self.ucrt_cmd_output = ucrt
+        else:
+            self.ucrt_cmd_output = output
 
 
 examples = [
@@ -100,31 +113,32 @@ examples = [
     Example(r'""', [""]),
     Example(r'"""', ['"']),
     Example(r'""""', ['"']),
-    Example(r'"""""', ['"']),
+    Example(r'"""""', ['"'], ucrt=['""']),
     Example(r'""""""', ['""']),
-    Example(r'"""""""', ['""']),
-    Example(r'""""""""', ['""']),
-    Example(r'"""""""""', ['"""']),
-    Example(r'""""""""""', ['"""']),
+    Example(r'"""""""', ['""'], ucrt=['"""']),
+    Example(r'""""""""', ['""'], ucrt=['"""']),
+    Example(r'"""""""""', ['"""'], ucrt=['""""']),
+    Example(r'""""""""""', ['"""'], ucrt=['""""']),
     Example(r' "', [""]),
     Example(r' ""', [""]),
     Example(r' """', ['"']),
     Example(r' """"', ['"']),
-    Example(r' """""', ['"']),
+    Example(r' """""', ['"'], ucrt=['""']),
     Example(r' """"""', ['""']),
-    Example(r' """""""', ['""']),
-    Example(r' """"""""', ['""']),
-    Example(r' """"""""""', ['"""']),
+    Example(r' """""""', ['""'], ucrt=['"""']),
+    Example(r' """"""""', ['""'], ucrt=['"""']),
+    Example(r' """"""""""', ['"""'], ucrt=['""""']),
     Example(r" ", []),
     Example(r'" ', [" "]),
     Example(r'"" ', [""]),
-    Example(r'""" ', ['"']),
-    Example(r'"""" ', ['" ']),
-    Example(r'""""" ', ['"']),
-    Example(r'"""""" ', ['""']),
-    Example(r'""""""" ', ['"" ']),
-    Example(r'"""""""" ', ['""']),
-    Example(r'"""""""""" ', ['""" ']),
+    Example(r'""" ', ['"'], ucrt=['" ']),
+    Example(r'"""" ', ['" '], ucrt=['"']),
+    Example(r'""""" ', ['"'], ucrt=['"" ']),
+    Example(r'"""""" ', ['""'], ucrt=['""']),
+    Example(r'""""""" ', ['"" '], ucrt=['""" ']),
+    Example(r'"""""""" ', ['""'], ucrt=['"""']),
+    Example(r'""""""""" ', ['"""'], ucrt=['"""" ']),
+    Example(r'"""""""""" ', ['""" '], ucrt=['""""']),
     Example(r"x", ["x"]),
     Example(r'x"', ["x"]),
     Example(r"foo", ["foo"]),
@@ -134,149 +148,137 @@ examples = [
     Example(r"a\\\"b c d", [r"a\"b", "c", "d"]),
     Example(r'a\\\\"b c" d e', [r"a\\b c", "d", "e"]),
     Example('"" "" ""', ["", "", ""]),
-    Example('" x', [" x"]),
-    Example('"" x', ["", "x"]),
-    Example('""" x', ['"', "x"]),
-    Example('"""" x', ['" x']),
-    Example('""""" x', ['"', "x"]),
-    Example('"""""" x', ['""', "x"]),
-    Example('""""""" x', ['"" x']),
-    Example('"""""""" x', ['""', "x"]),
-    Example('""""""""" x', ['"""', "x"]),
-    Example('"""""""""" x', ['""" x']),
-    Example('""""""""""" x', ['"""', "x"]),
-    Example('"""""""""""" x', ['""""', "x"]),
-    Example('""""""""""""" x', ['"""" x']),
-    Example('"aaa x', ["aaa x"]),
-    Example('"aaa" x', ["aaa", "x"]),
-    Example('"aaa"" x', ['aaa"', "x"]),
-    Example('"aaa""" x', ['aaa" x']),
-    Example('"aaa"""" x', ['aaa"', "x"]),
-    Example('"aaa""""" x', ['aaa""', "x"]),
-    Example('"aaa"""""" x', ['aaa"" x']),
-    Example('"aaa""""""" x', ['aaa""', "x"]),
-    Example('"aaa"""""""" x', ['aaa"""', "x"]),
-    Example('"aaa""""""""" x', ['aaa""" x']),
-    Example('"aaa"""""""""" x', ['aaa"""', "x"]),
-    Example('"aaa""""""""""" x', ['aaa""""', "x"]),
-    Example('"aaa"""""""""""" x', ['aaa"""" x']),
-    Example('"aaa\\ x', ["aaa\\ x"]),
-    Example('"aaa\\" x', ['aaa" x']),
-    Example('"aaa\\"" x', ['aaa"', "x"]),
-    Example('"aaa\\""" x', ['aaa""', "x"]),
-    Example('"aaa\\"""" x', ['aaa"" x']),
-    Example('"aaa\\""""" x', ['aaa""', "x"]),
-    Example('"aaa\\"""""" x', ['aaa"""', "x"]),
-    Example('"aaa\\""""""" x', ['aaa""" x']),
-    Example('"aaa\\"""""""" x', ['aaa"""', "x"]),
-    Example('"aaa\\""""""""" x', ['aaa""""', "x"]),
-    Example('"aaa\\"""""""""" x', ['aaa"""" x']),
-    Example('"aaa\\""""""""""" x', ['aaa""""', "x"]),
-    Example('"aaa\\"""""""""""" x', ['aaa"""""', "x"]),
-    Example('"aaa\\\\ x', ["aaa\\\\ x"]),
-    Example('"aaa\\\\" x', ["aaa\\", "x"]),
-    Example('"aaa\\\\"" x', ['aaa\\"', "x"]),
-    Example('"aaa\\\\""" x', ['aaa\\" x']),
-    Example('"aaa\\\\"""" x', ['aaa\\"', "x"]),
-    Example('"aaa\\\\""""" x', ['aaa\\""', "x"]),
-    Example('"aaa\\\\"""""" x', ['aaa\\"" x']),
-    Example('"aaa\\\\""""""" x', ['aaa\\""', "x"]),
-    Example('"aaa\\\\"""""""" x', ['aaa\\"""', "x"]),
-    Example('"aaa\\\\""""""""" x', ['aaa\\""" x']),
-    Example('"aaa\\\\"""""""""" x', ['aaa\\"""', "x"]),
-    Example('"aaa\\\\""""""""""" x', ['aaa\\""""', "x"]),
-    Example('"aaa\\\\"""""""""""" x', ['aaa\\"""" x']),
-    Example('"aaa\\\\\\ x', ["aaa\\\\\\ x"]),
-    Example('"aaa\\\\\\" x', ['aaa\\" x']),
-    Example('"aaa\\\\\\"" x', ['aaa\\"', "x"]),
-    Example('"aaa\\\\\\""" x', ['aaa\\""', "x"]),
-    Example('"aaa\\\\\\"""" x', ['aaa\\"" x']),
-    Example('"aaa\\\\\\""""" x', ['aaa\\""', "x"]),
-    Example('"aaa\\\\\\"""""" x', ['aaa\\"""', "x"]),
-    Example('"aaa\\\\\\""""""" x', ['aaa\\""" x']),
-    Example('"aaa\\\\\\"""""""" x', ['aaa\\"""', "x"]),
-    Example('"aaa\\\\\\""""""""" x', ['aaa\\""""', "x"]),
-    Example('"aaa\\\\\\"""""""""" x', ['aaa\\"""" x']),
-    Example('"aaa\\\\\\""""""""""" x', ['aaa\\""""', "x"]),
-    Example('"aaa\\\\\\"""""""""""" x', ['aaa\\"""""', "x"]),
-    Example('"aaa\\\\\\\\ x', ["aaa\\\\\\\\ x"]),
-    Example('"aaa\\\\\\\\" x', ["aaa\\\\", "x"]),
-    Example('"aaa\\\\\\\\"" x', ['aaa\\\\"', "x"]),
-    Example('"aaa\\\\\\\\""" x', ['aaa\\\\" x']),
-    Example('"aaa\\\\\\\\"""" x', ['aaa\\\\"', "x"]),
-    Example('"aaa\\\\\\\\""""" x', ['aaa\\\\""', "x"]),
-    Example('"aaa\\\\\\\\"""""" x', ['aaa\\\\"" x']),
-    Example('"aaa\\\\\\\\""""""" x', ['aaa\\\\""', "x"]),
-    Example('"aaa\\\\\\\\"""""""" x', ['aaa\\\\"""', "x"]),
-    Example('"aaa\\\\\\\\""""""""" x', ['aaa\\\\""" x']),
-    Example('"aaa\\\\\\\\"""""""""" x', ['aaa\\\\"""', "x"]),
-    Example('"aaa\\\\\\\\""""""""""" x', ['aaa\\\\""""', "x"]),
-    Example('"aaa\\\\\\\\"""""""""""" x', ['aaa\\\\"""" x']),
     Example(" x", ["x"]),
     Example('" x', [" x"]),
     Example('"" x', ["", "x"]),
-    Example('""" x', ['"', "x"]),
-    Example('"""" x', ['" x']),
-    Example('""""" x', ['"', "x"]),
-    Example('"""""" x', ['""', "x"]),
-    Example('""""""" x', ['"" x']),
-    Example('"""""""" x', ['""', "x"]),
-    Example('""""""""" x', ['"""', "x"]),
-    Example('"""""""""" x', ['""" x']),
-    Example('""""""""""" x', ['"""', "x"]),
-    Example('"""""""""""" x', ['""""', "x"]),
+    Example('""" x', ['"', "x"], ucrt=['" x']),
+    Example('"""" x', ['" x'], ucrt=['"', "x"]),
+    Example('""""" x', ['"', "x"], ucrt=['"" x']),
+    Example('"""""" x', ['""', "x"], ucrt=['""', "x"]),
+    Example('""""""" x', ['"" x'], ucrt=['""" x']),
+    Example('"""""""" x', ['""', "x"], ucrt=['"""', "x"]),
+    Example('""""""""" x', ['"""', "x"], ucrt=['"""" x']),
+    Example('"""""""""" x', ['""" x'], ucrt=['""""', "x"]),
+    Example('""""""""""" x', ['"""', "x"], ucrt=['""""" x']),
+    Example('"""""""""""" x', ['""""', "x"], ucrt=['"""""', "x"]),
+    Example('""""""""""""" x', ['"""" x'], ucrt=['"""""" x']),
+    Example('"aaa x', ["aaa x"]),
+    Example('"aaa" x', ["aaa", "x"]),
+    Example('"aaa"" x', ['aaa"', "x"], ucrt=['aaa" x']),
+    Example('"aaa""" x', ['aaa" x'], ucrt=['aaa"', "x"]),
+    Example('"aaa"""" x', ['aaa"', "x"], ucrt=['aaa"" x']),
+    Example('"aaa""""" x', ['aaa""', "x"]),
+    Example('"aaa"""""" x', ['aaa"" x'], ucrt=['aaa""" x']),
+    Example('"aaa""""""" x', ['aaa""', "x"], ucrt=['aaa"""', "x"]),
+    Example('"aaa"""""""" x', ['aaa"""', "x"], ucrt=['aaa"""" x']),
+    Example('"aaa""""""""" x', ['aaa""" x'], ucrt=['aaa""""', "x"]),
+    Example('"aaa"""""""""" x', ['aaa"""', "x"], ucrt=['aaa""""" x']),
+    Example('"aaa""""""""""" x', ['aaa""""', "x"], ucrt=['aaa"""""', "x"]),
+    Example('"aaa"""""""""""" x', ['aaa"""" x'], ucrt=['aaa"""""" x']),
+    Example('"aaa\\ x', ["aaa\\ x"]),
+    Example('"aaa\\" x', ['aaa" x']),
+    Example('"aaa\\"" x', ['aaa"', "x"]),
+    Example('"aaa\\""" x', ['aaa""', "x"], ucrt=['aaa"" x']),
+    Example('"aaa\\"""" x', ['aaa"" x'], ucrt=['aaa""', "x"]),
+    Example('"aaa\\""""" x', ['aaa""', "x"], ucrt=['aaa""" x']),
+    Example('"aaa\\"""""" x', ['aaa"""', "x"]),
+    Example('"aaa\\""""""" x', ['aaa""" x'], ucrt=['aaa"""" x']),
+    Example('"aaa\\"""""""" x', ['aaa"""', "x"], ucrt=['aaa""""', "x"]),
+    Example('"aaa\\""""""""" x', ['aaa""""', "x"], ucrt=['aaa""""" x']),
+    Example('"aaa\\"""""""""" x', ['aaa"""" x'], ucrt=['aaa"""""', "x"]),
+    Example('"aaa\\""""""""""" x', ['aaa""""', "x"], ucrt=['aaa"""""" x']),
+    Example('"aaa\\"""""""""""" x', ['aaa"""""', "x"], ucrt=['aaa""""""', "x"]),
+    Example('"aaa\\\\ x', ["aaa\\\\ x"]),
+    Example('"aaa\\\\" x', ["aaa\\", "x"]),
+    Example('"aaa\\\\"" x', ['aaa\\"', "x"], ucrt=['aaa\\" x']),
+    Example('"aaa\\\\""" x', ['aaa\\" x'], ucrt=['aaa\\"', "x"]),
+    Example('"aaa\\\\"""" x', ['aaa\\"', "x"], ucrt=['aaa\\"" x']),
+    Example('"aaa\\\\""""" x', ['aaa\\""', "x"]),
+    Example('"aaa\\\\"""""" x', ['aaa\\"" x'], ucrt=['aaa\\""" x']),
+    Example('"aaa\\\\""""""" x', ['aaa\\""', "x"], ucrt=['aaa\\"""', "x"]),
+    Example('"aaa\\\\"""""""" x', ['aaa\\"""', "x"], ucrt=['aaa\\"""" x']),
+    Example('"aaa\\\\""""""""" x', ['aaa\\""" x'], ucrt=['aaa\\""""', "x"]),
+    Example('"aaa\\\\"""""""""" x', ['aaa\\"""', "x"], ucrt=['aaa\\""""" x']),
+    Example('"aaa\\\\""""""""""" x', ['aaa\\""""', "x"], ucrt=['aaa\\"""""', "x"]),
+    Example('"aaa\\\\"""""""""""" x', ['aaa\\"""" x'], ucrt=['aaa\\"""""" x']),
+    Example('"aaa\\\\\\ x', ["aaa\\\\\\ x"]),
+    Example('"aaa\\\\\\" x', ['aaa\\" x']),
+    Example('"aaa\\\\\\"" x', ['aaa\\"', "x"]),
+    Example('"aaa\\\\\\""" x', ['aaa\\""', "x"], ucrt=['aaa\\"" x']),
+    Example('"aaa\\\\\\"""" x', ['aaa\\"" x'], ucrt=['aaa\\""', "x"]),
+    Example('"aaa\\\\\\""""" x', ['aaa\\""', "x"], ucrt=['aaa\\""" x']),
+    Example('"aaa\\\\\\"""""" x', ['aaa\\"""', "x"]),
+    Example('"aaa\\\\\\""""""" x', ['aaa\\""" x'], ucrt=['aaa\\"""" x']),
+    Example('"aaa\\\\\\"""""""" x', ['aaa\\"""', "x"], ucrt=['aaa\\""""', "x"]),
+    Example('"aaa\\\\\\""""""""" x', ['aaa\\""""', "x"], ucrt=['aaa\\""""" x']),
+    Example('"aaa\\\\\\"""""""""" x', ['aaa\\"""" x'], ucrt=['aaa\\"""""', "x"]),
+    Example('"aaa\\\\\\""""""""""" x', ['aaa\\""""', "x"], ucrt=['aaa\\"""""" x']),
+    Example('"aaa\\\\\\"""""""""""" x', ['aaa\\"""""', "x"], ucrt=['aaa\\""""""', "x"]),
+    Example('"aaa\\\\\\\\ x', ["aaa\\\\\\\\ x"]),
+    Example('"aaa\\\\\\\\" x', ["aaa\\\\", "x"]),
+    Example('"aaa\\\\\\\\"" x', ['aaa\\\\"', "x"], ucrt=['aaa\\\\" x']),
+    Example('"aaa\\\\\\\\""" x', ['aaa\\\\" x'], ucrt=['aaa\\\\"', "x"]),
+    Example('"aaa\\\\\\\\"""" x', ['aaa\\\\"', "x"], ucrt=['aaa\\\\"" x']),
+    Example('"aaa\\\\\\\\""""" x', ['aaa\\\\""', "x"]),
+    Example('"aaa\\\\\\\\"""""" x', ['aaa\\\\"" x'], ucrt=['aaa\\\\""" x']),
+    Example('"aaa\\\\\\\\""""""" x', ['aaa\\\\""', "x"], ucrt=['aaa\\\\"""', "x"]),
+    Example('"aaa\\\\\\\\"""""""" x', ['aaa\\\\"""', "x"], ucrt=['aaa\\\\"""" x']),
+    Example('"aaa\\\\\\\\""""""""" x', ['aaa\\\\""" x'], ucrt=['aaa\\\\""""', "x"]),
+    Example('"aaa\\\\\\\\"""""""""" x', ['aaa\\\\"""', "x"], ucrt=['aaa\\\\""""" x']),
+    Example('"aaa\\\\\\\\""""""""""" x', ['aaa\\\\""""', "x"], ucrt=['aaa\\\\"""""', "x"]),
+    Example('"aaa\\\\\\\\"""""""""""" x', ['aaa\\\\"""" x'], ucrt=['aaa\\\\"""""" x']),
     Example("\\ x", ["\\", "x"]),
     Example('\\" x', ['"', "x"]),
     Example('\\"" x', ['" x']),
     Example('\\""" x', ['"', "x"]),
-    Example('\\"""" x', ['""', "x"]),
-    Example('\\""""" x', ['"" x']),
-    Example('\\"""""" x', ['""', "x"]),
+    Example('\\"""" x', ['""', "x"], ucrt=['"" x']),
+    Example('\\""""" x', ['"" x'], ucrt=['""', "x"]),
+    Example('\\"""""" x', ['""', "x"], ucrt=['""" x']),
     Example('\\""""""" x', ['"""', "x"]),
-    Example('\\"""""""" x', ['""" x']),
-    Example('\\""""""""" x', ['"""', "x"]),
-    Example('\\"""""""""" x', ['""""', "x"]),
-    Example('\\""""""""""" x', ['"""" x']),
-    Example('\\"""""""""""" x', ['""""', "x"]),
+    Example('\\"""""""" x', ['""" x'], ucrt=['"""" x']),
+    Example('\\""""""""" x', ['"""', "x"], ucrt=['""""', "x"]),
+    Example('\\"""""""""" x', ['""""', "x"], ucrt=['""""" x']),
+    Example('\\""""""""""" x', ['"""" x'], ucrt=['"""""', "x"]),
+    Example('\\"""""""""""" x', ['""""', "x"], ucrt=['"""""" x']),
     Example("\\\\ x", ["\\\\", "x"]),
     Example('\\\\" x', ["\\ x"]),
     Example('\\\\"" x', ["\\", "x"]),
-    Example('\\\\""" x', ['\\"', "x"]),
-    Example('\\\\"""" x', ['\\" x']),
-    Example('\\\\""""" x', ['\\"', "x"]),
+    Example('\\\\""" x', ['\\"', "x"], ucrt=['\\" x']),
+    Example('\\\\"""" x', ['\\" x'], ucrt=['\\"', "x"]),
+    Example('\\\\""""" x', ['\\"', "x"], ucrt=['\\"" x']),
     Example('\\\\"""""" x', ['\\""', "x"]),
-    Example('\\\\""""""" x', ['\\"" x']),
-    Example('\\\\"""""""" x', ['\\""', "x"]),
-    Example('\\\\""""""""" x', ['\\"""', "x"]),
-    Example('\\\\"""""""""" x', ['\\""" x']),
-    Example('\\\\""""""""""" x', ['\\"""', "x"]),
-    Example('\\\\"""""""""""" x', ['\\""""', "x"]),
+    Example('\\\\""""""" x', ['\\"" x'], ucrt=['\\""" x']),
+    Example('\\\\"""""""" x', ['\\""', "x"], ucrt=['\\"""', "x"]),
+    Example('\\\\""""""""" x', ['\\"""', "x"], ucrt=['\\"""" x']),
+    Example('\\\\"""""""""" x', ['\\""" x'], ucrt=['\\""""', "x"]),
+    Example('\\\\""""""""""" x', ['\\"""', "x"], ucrt=['\\""""" x']),
+    Example('\\\\"""""""""""" x', ['\\""""', "x"], ucrt=['\\"""""', "x"]),
     Example("\\\\\\ x", ["\\\\\\", "x"]),
     Example('\\\\\\" x', ['\\"', "x"]),
     Example('\\\\\\"" x', ['\\" x']),
     Example('\\\\\\""" x', ['\\"', "x"]),
-    Example('\\\\\\"""" x', ['\\""', "x"]),
-    Example('\\\\\\""""" x', ['\\"" x']),
-    Example('\\\\\\"""""" x', ['\\""', "x"]),
+    Example('\\\\\\"""" x', ['\\""', "x"], ucrt=['\\"" x']),
+    Example('\\\\\\""""" x', ['\\"" x'], ucrt=['\\""', "x"]),
+    Example('\\\\\\"""""" x', ['\\""', "x"], ucrt=['\\""" x']),
     Example('\\\\\\""""""" x', ['\\"""', "x"]),
-    Example('\\\\\\"""""""" x', ['\\""" x']),
-    Example('\\\\\\""""""""" x', ['\\"""', "x"]),
-    Example('\\\\\\"""""""""" x', ['\\""""', "x"]),
-    Example('\\\\\\""""""""""" x', ['\\"""" x']),
-    Example('\\\\\\"""""""""""" x', ['\\""""', "x"]),
+    Example('\\\\\\"""""""" x', ['\\""" x'], ucrt=['\\"""" x']),
+    Example('\\\\\\""""""""" x', ['\\"""', "x"], ucrt=['\\""""', "x"]),
+    Example('\\\\\\"""""""""" x', ['\\""""', "x"], ucrt=['\\""""" x']),
+    Example('\\\\\\""""""""""" x', ['\\"""" x'], ucrt=['\\"""""', "x"]),
+    Example('\\\\\\"""""""""""" x', ['\\""""', "x"], ucrt=['\\"""""" x']),
     Example("\\\\\\\\ x", ["\\\\\\\\", "x"]),
     Example('\\\\\\\\" x', ["\\\\ x"]),
     Example('\\\\\\\\"" x', ["\\\\", "x"]),
-    Example('\\\\\\\\""" x', ['\\\\"', "x"]),
-    Example('\\\\\\\\"""" x', ['\\\\" x']),
-    Example('\\\\\\\\""""" x', ['\\\\"', "x"]),
+    Example('\\\\\\\\""" x', ['\\\\"', "x"], ucrt=['\\\\" x']),
+    Example('\\\\\\\\"""" x', ['\\\\" x'], ucrt=['\\\\"', "x"]),
+    Example('\\\\\\\\""""" x', ['\\\\"', "x"], ucrt=['\\\\"" x']),
     Example('\\\\\\\\"""""" x', ['\\\\""', "x"]),
-    Example('\\\\\\\\""""""" x', ['\\\\"" x']),
-    Example('\\\\\\\\"""""""" x', ['\\\\""', "x"]),
-    Example('\\\\\\\\""""""""" x', ['\\\\"""', "x"]),
-    Example('\\\\\\\\"""""""""" x', ['\\\\""" x']),
-    Example('\\\\\\\\""""""""""" x', ['\\\\"""', "x"]),
-    Example('\\\\\\\\"""""""""""" x', ['\\\\""""', "x"]),
+    Example('\\\\\\\\""""""" x', ['\\\\"" x'], ucrt=['\\\\""" x']),
+    Example('\\\\\\\\"""""""" x', ['\\\\""', "x"], ucrt=['\\\\"""', "x"]),
+    Example('\\\\\\\\""""""""" x', ['\\\\"""', "x"], ucrt=['\\\\"""" x']),
+    Example('\\\\\\\\"""""""""" x', ['\\\\""" x'], ucrt=['\\\\""""', "x"]),
+    Example('\\\\\\\\""""""""""" x', ['\\\\"""', "x"], ucrt=['\\\\""""" x']),
+    Example('\\\\\\\\"""""""""""" x', ['\\\\""""', "x"], ucrt=['\\\\"""""', "x"]),
     Example('"x"', ["x"]),
     Example('"^x"', ["^x"]),
     Example('"^^x"', ["^^x"]),
@@ -380,19 +382,19 @@ class TestMslex(unittest.TestCase):
             v = split(s, like_cmd=cmd, ucrt=ucrt)
             if ans is not None:
                 self.assertEqual(v, ans)
-            if sys.platform == "win32":
+            if sys.platform == "win32" and not ucrt:
                 self.assertEqual(v, win_split(s))
-        except AssertionError:
+        except (MSLexError, AssertionError):
             print("in: «{}»".format(s))
             print()
-            for x in split(s, like_cmd=cmd):
+            for x in split(s, like_cmd=cmd, ucrt=ucrt):
                 print("out: «{}»".format(x))
             print()
             if ans is not None:
                 for x in ans:
                     print("ans: «{}»".format(x))
                 print()
-            if sys.platform == "win32":
+            if sys.platform == "win32" and not ucrt:
                 for x in win_split(s):
                     print("win: «{}»".format(x))
                 print()
@@ -429,11 +431,31 @@ class TestMslex(unittest.TestCase):
 
     def test_examples(self):
         for e in examples:
-            self.case(e.input, e.output, cmd=False, ucrt=False)
+            try:
+                self.case(e.input, e.output, cmd=False)
+            except MSLexError as err:
+                assert e.output != e.ucrt_output
+                assert "String is ambiguous" in str(err)
+            else:
+                assert e.output == e.ucrt_output
+
+    def test_examples_ucrt(self):
+        for e in examples:
+            self.case(e.input, e.ucrt_output, cmd=False, ucrt=True)
 
     def test_examples_for_cmd(self):
         for e in examples:
-            self.case(e.input, e.cmd_output, cmd=True, ucrt=False)
+            try:
+                self.case(e.input, e.cmd_output, cmd=True)
+            except MSLexError as err:
+                assert e.cmd_output != e.ucrt_cmd_output
+                assert "String is ambiguous" in str(err)
+            else:
+                assert e.cmd_output == e.ucrt_cmd_output
+
+    def test_examples_for_cmd_ucrt(self):
+        for e in examples:
+            self.case(e.input, e.ucrt_cmd_output, cmd=True, ucrt=True)
 
     def test_quote_examples(self):
         qu = functools.partial(quote, for_cmd=False)
